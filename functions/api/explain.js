@@ -17,7 +17,7 @@
 // fetch к нужному API и сохраните секретный ключ через
 // Settings → Environment variables → Secrets (никогда не кладите ключ в код).
 
-const MODEL = "@cf/meta/llama-3.1-8b-instruct";
+const MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8";
 const MAX_LEN = 500;
 
 function clip(value, max = MAX_LEN) {

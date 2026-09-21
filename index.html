@@ -3553,8 +3553,12 @@ document.getElementById("cloudAuthSubmit").onclick = async () => {
     }
     state.cloudLogin = login;
     state.cloudToken = data.token;
-    saveState();
-    if(cloudAuthMode === "login") await cloudPull();
+    if(cloudAuthMode === "login"){
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+      await cloudPull();
+    } else {
+      saveState();
+    }
     renderCloudAccountUI();
     closeCloudAuthModal();
   }catch(e){

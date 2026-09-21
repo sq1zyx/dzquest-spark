@@ -720,6 +720,22 @@
           </div>
         </div>
 
+        <div class="section-title">Облачный аккаунт</div>
+        <div class="card" id="cloudAccountCard">
+          <div id="cloudAccountLoggedOut">
+            <div class="lb-sub" style="margin-bottom:10px;">Войди в облачный аккаунт, чтобы прогресс сохранялся на сервере и был доступен с любого устройства по логину и паролю.</div>
+            <button class="btn" id="cloudOpenLoginBtn">🔐 Войти</button>
+            <button class="btn btn-secondary" id="cloudOpenRegisterBtn" style="margin-top:8px;">✨ Создать аккаунт</button>
+          </div>
+          <div id="cloudAccountLoggedIn" class="hidden">
+            <div class="settings-toggle-row">
+              <div class="label"><svg class="ico stat-ic"><use href="#icon-person"></use></svg> Аккаунт<small id="cloudAccountLoginLabel">—</small></div>
+            </div>
+            <div class="lb-sub" style="margin:6px 0 10px;">Прогресс автоматически синхронизируется на сервере.</div>
+            <button class="btn btn-secondary" id="cloudLogoutBtn">Выйти из аккаунта</button>
+          </div>
+        </div>
+
         <div class="section-title">Приложение</div>
         <div class="card">
           <button class="btn hidden" id="installAppBtn">⬇️ Установить приложение на устройство</button>
@@ -885,6 +901,23 @@
         <div class="lb-sub" id="authParentStatus" style="margin-top:8px;text-align:center;"></div>
         <button class="btn btn-secondary" id="authBack2" style="margin-top:8px;">Назад</button>
       </div>
+    </div>
+  </div>
+
+  <!-- CLOUD ACCOUNT MODAL -->
+  <div id="cloudAuthModal" class="grade-modal hidden">
+    <div class="grade-modal-card card">
+      <button class="modal-close-btn" id="cloudAuthClose" type="button" aria-label="Закрыть">✕</button>
+      <div class="lock-head">
+        <div class="emoji"><svg class="ico"><use href="#icon-lock"></use></svg></div>
+        <h3 id="cloudAuthTitle">Вход в аккаунт</h3>
+        <p>Прогресс будет доступен с любого устройства по логину и паролю</p>
+      </div>
+      <input type="text" id="cloudAuthLogin" placeholder="Логин (латиница, цифры)" autocomplete="username" style="margin-top:10px;">
+      <input type="password" id="cloudAuthPassword" placeholder="Пароль" autocomplete="current-password" style="margin-top:8px;">
+      <button class="btn" id="cloudAuthSubmit" style="margin-top:12px;">Войти</button>
+      <button class="btn btn-secondary" id="cloudAuthToggleMode" style="margin-top:8px;">Нет аккаунта? Зарегистрироваться</button>
+      <div class="lb-sub" id="cloudAuthStatus" style="margin-top:8px;text-align:center;"></div>
     </div>
   </div>
 
@@ -1341,6 +1374,8 @@ let selectedLesson = null;
 function defaultState(){
   return {
     role: "child",
+    cloudLogin: null,
+    cloudToken: null,
     childName: "",
     grade: null,
     coins: 0,
@@ -1470,6 +1505,8 @@ async function loadState(){
   renderParentView();
   refreshAllStats();
   renderSettingsToggles();
+  renderCloudAccountUI();
+  if(state.cloudToken) cloudPull();
 
   if(!state.accountType){
     openAuthModal("authStepRole");
@@ -1485,7 +1522,82 @@ async function saveState(){
   try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), false); }
   catch(e){ console.error(e); }
   publishMe();
+  cloudPush();
 }
+
+// ---------- ОБЛАЧНЫЙ АККАУНТ (логин + пароль, синхронизация между устройствами) ----------
+const CLOUD_API = "/api/account";
+let cloudBusy = false;
+let cloudAuthMode = "login";
+
+async function cloudRequest(payload){
+  const res = await fetch(CLOUD_API, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  let data;
+  try{ data = await res.json(); }
+  catch(e){ throw new Error("Сервер вернул неверный ответ"); }
+  if(!data.ok) throw new Error(data.error || "Ошибка сервера");
+  return data;
+}
+
+function renderCloudAccountUI(){
+  const loggedOut = document.getElementById("cloudAccountLoggedOut");
+  const loggedIn = document.getElementById("cloudAccountLoggedIn");
+  if(!loggedOut || !loggedIn) return;
+  if(state.cloudLogin && state.cloudToken){
+    loggedOut.classList.add("hidden");
+    loggedIn.classList.remove("hidden");
+    document.getElementById("cloudAccountLoginLabel").textContent = state.cloudLogin;
+  } else {
+    loggedOut.classList.remove("hidden");
+    loggedIn.classList.add("hidden");
+  }
+}
+
+async function cloudPush(){
+  if(!state.cloudToken) return;
+  try{ await cloudRequest({ action: "save", token: state.cloudToken, state }); }
+  catch(e){ console.warn("Не удалось сохранить в облако:", e.message); }
+}
+
+async function cloudPull(){
+  if(!state.cloudToken) return;
+  try{
+    const data = await cloudRequest({ action: "load", token: state.cloudToken });
+    if(data.state){
+      const cloudLogin = state.cloudLogin, cloudToken = state.cloudToken;
+      state = Object.assign(defaultState(), data.state);
+      state.cloudLogin = cloudLogin;
+      state.cloudToken = cloudToken;
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+      applyTheme(state.currentTheme);
+      setRole(state.role || "child");
+      renderShop(); renderGradeGrid(); renderSubjectGrid(); renderMap();
+      renderDifficultyChips(); renderAutoThemeToggle(); renderReminderToggle();
+      renderParentView(); refreshAllStats(); renderSettingsToggles();
+      renderCloudAccountUI();
+    }
+  }catch(e){ console.warn("Не удалось загрузить из облака:", e.message); }
+}
+
+function updateCloudAuthModalMode(){
+  const isLogin = cloudAuthMode === "login";
+  document.getElementById("cloudAuthTitle").textContent = isLogin ? "Вход в аккаунт" : "Новый облачный аккаунт";
+  document.getElementById("cloudAuthSubmit").textContent = isLogin ? "Войти" : "Зарегистрироваться";
+  document.getElementById("cloudAuthToggleMode").textContent = isLogin ? "Нет аккаунта? Зарегистрироваться" : "Уже есть аккаунт? Войти";
+}
+function openCloudAuthModal(mode){
+  cloudAuthMode = mode || "login";
+  updateCloudAuthModalMode();
+  document.getElementById("cloudAuthLogin").value = "";
+  document.getElementById("cloudAuthPassword").value = "";
+  document.getElementById("cloudAuthStatus").textContent = "";
+  document.getElementById("cloudAuthModal").classList.remove("hidden");
+}
+function closeCloudAuthModal(){ document.getElementById("cloudAuthModal").classList.add("hidden"); }
 
 /* ---------- СИНХРОНИЗАЦИЯ РОДИТЕЛЬ ↔ РЕБЁНОК ----------
    Приложение автономное и без своего сервера, поэтому "привязка" работает
@@ -3412,6 +3524,50 @@ document.getElementById("authSkipLink").onclick = () => {
   renderParentView();
   saveState();
   closeAuthModal();
+};
+
+document.getElementById("cloudOpenLoginBtn").onclick = () => openCloudAuthModal("login");
+document.getElementById("cloudOpenRegisterBtn").onclick = () => openCloudAuthModal("register");
+document.getElementById("cloudAuthClose").onclick = closeCloudAuthModal;
+document.getElementById("cloudAuthToggleMode").onclick = () => {
+  cloudAuthMode = cloudAuthMode === "login" ? "register" : "login";
+  updateCloudAuthModalMode();
+};
+document.getElementById("cloudAuthSubmit").onclick = async () => {
+  if(cloudBusy) return;
+  const login = document.getElementById("cloudAuthLogin").value.trim();
+  const password = document.getElementById("cloudAuthPassword").value;
+  const status = document.getElementById("cloudAuthStatus");
+  if(!login || !password){ status.textContent = "Заполни логин и пароль"; return; }
+  cloudBusy = true;
+  status.textContent = cloudAuthMode === "login" ? "Входим..." : "Создаём аккаунт...";
+  try{
+    let data;
+    if(cloudAuthMode === "register"){
+      data = await cloudRequest({ action: "register", login, password, state });
+    } else {
+      data = await cloudRequest({ action: "login", login, password });
+    }
+    state.cloudLogin = login;
+    state.cloudToken = data.token;
+    saveState();
+    if(cloudAuthMode === "login") await cloudPull();
+    renderCloudAccountUI();
+    closeCloudAuthModal();
+  }catch(e){
+    status.textContent = e.message || "Ошибка";
+  }finally{
+    cloudBusy = false;
+  }
+};
+document.getElementById("cloudLogoutBtn").onclick = async () => {
+  if(state.cloudToken){
+    try{ await cloudRequest({ action: "logout", token: state.cloudToken }); }catch(e){}
+  }
+  state.cloudLogin = null;
+  state.cloudToken = null;
+  saveState();
+  renderCloudAccountUI();
 };
 
 // ---- привязка из вкладки родителя ----

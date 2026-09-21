@@ -1574,6 +1574,9 @@ async function cloudPull(){
       state.cloudToken = cloudToken;
       await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
       applyTheme(state.currentTheme);
+      document.getElementById("passInput").value = state.passPercent;
+      document.getElementById("childNameInput").value = state.childName || "";
+      document.getElementById("profNameInput").value = state.childName || "";
       setRole(state.role || "child");
       renderShop(); renderGradeGrid(); renderSubjectGrid(); renderMap();
       renderDifficultyChips(); renderAutoThemeToggle(); renderReminderToggle();

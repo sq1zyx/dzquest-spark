@@ -13,3 +13,7 @@ compatibility_date = "2024-09-23"
 
 [ai]
 binding = "AI"
+
+[[kv_namespaces]]
+binding = "ACCOUNTS"
+id = "5b5ef985ec964942b4fd557c74d6d734"

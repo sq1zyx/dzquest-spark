@@ -364,7 +364,7 @@
   @keyframes stepIn{ from{opacity:0;} to{opacity:1;} }
 
   /* --- переход между вкладками --- */
-  #questTab, #mapTab, #shopTab, #profileTab, #settingsTab{ animation:tabIn .18s ease both; }
+  #questTab, #mapTab, #examsTab, #shopTab, #profileTab, #settingsTab{ animation:tabIn .18s ease both; }
   @keyframes tabIn{ from{opacity:0;} to{opacity:1;} }
 
   .result-box .emoji{ animation:resultPop .35s ease both; }
@@ -564,6 +564,15 @@
               <div class="emoji" id="watchStepEmoji"><svg class="ico"><use href="#icon-play"></use></svg></div>
               <h3 id="watchStepTitle">Смотри внимательно</h3>
             </div>
+            <div id="watchChoiceWrap" class="card" style="text-align:center;">
+              <div style="font-weight:800;margin-bottom:10px;">Как будешь готовиться по теме?</div>
+              <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="btn" id="choiceWatchBtn"><svg class="ico" style="width:14px;height:14px;"><use href="#icon-play"></use></svg> Смотреть видео</button>
+                <button class="btn btn-secondary" id="choiceCheatBtn"><svg class="ico" style="width:14px;height:14px;"><use href="#icon-bookopen"></use></svg> Шпаргалка</button>
+                <button class="btn btn-secondary" id="choiceSkipBtn"><svg class="ico" style="width:14px;height:14px;"><use href="#icon-fastforward"></use></svg> Пропустить</button>
+              </div>
+            </div>
+            <div id="watchActiveWrap" class="hidden" style="display:flex;flex-direction:column;gap:10px;">
             <div id="videoFrameWrap" class="video-frame hidden"><iframe id="videoIframe" src="" allow="autoplay"></iframe></div>
             <div id="textSourceWrap" class="hidden card" style="text-align:center;">
               <div class="emoji" style="width:44px;height:44px;margin:0 auto 6px;border-radius:14px;"><svg class="ico" style="width:22px;height:22px;"><use href="#icon-bookopen"></use></svg></div>
@@ -579,6 +588,7 @@
             <div id="cheatSheetWrap" class="hidden">
               <button class="btn btn-secondary" id="toggleCheatSheetBtn"><svg class="ico" style="width:13px;height:13px;"><use href="#icon-bookopen"></use></svg> Показать шпаргалку</button>
               <div class="card hidden" id="cheatSheetBox" style="margin-top:8px;font-size:12.5px;"></div>
+            </div>
             </div>
           </div>
 
@@ -722,9 +732,21 @@
       </div>
     </div>
 
+    <!-- EXAMS TAB -->
+    <div id="examsTab" class="hidden">
+      <div class="card" style="text-align:center;">
+        <div class="emoji" style="width:44px;height:44px;margin:0 auto 8px;border-radius:14px;"><svg class="ico" style="width:22px;height:22px;"><use href="#icon-medal"></use></svg></div>
+        <div style="font-weight:800;font-size:14px;margin-bottom:4px;">Экзамены и проверочные</div>
+        <div style="font-size:12px;color:var(--muted);">Официальные банки заданий и демоверсии. Открываются на внешних сайтах.</div>
+      </div>
+      <div class="section-title">Выбери, что готовить</div>
+      <div id="examsGrid" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+
     <div class="tabs">
       <div class="tab-btn active" data-tab="quest"><svg class="ico"><use href="#icon-bookopen"></use></svg><span>Учёба</span></div>
       <div class="tab-btn" data-tab="map"><svg class="ico"><use href="#icon-map"></use></svg><span>Карта</span></div>
+      <div class="tab-btn" data-tab="exams"><svg class="ico"><use href="#icon-medal"></use></svg><span>Экзамены</span></div>
       <div class="tab-btn" data-tab="shop"><svg class="ico"><use href="#icon-gift"></use></svg><span>Магазин</span></div>
       <div class="tab-btn" data-tab="profile"><svg class="ico"><use href="#icon-person"></use></svg><span>Профиль</span></div>
       <div class="tab-btn" data-tab="settings"><svg class="ico"><use href="#icon-gear"></use></svg><span>Настройки</span></div>
@@ -2023,11 +2045,13 @@ document.querySelectorAll(".tab-btn").forEach(btn=>{
     const tab = btn.dataset.tab;
     document.getElementById("questTab").classList.toggle("hidden", tab!=="quest");
     document.getElementById("mapTab").classList.toggle("hidden", tab!=="map");
+    document.getElementById("examsTab").classList.toggle("hidden", tab!=="exams");
     document.getElementById("shopTab").classList.toggle("hidden", tab!=="shop");
     document.getElementById("profileTab").classList.toggle("hidden", tab!=="profile");
     document.getElementById("settingsTab").classList.toggle("hidden", tab!=="settings");
     if(tab==="profile") refreshAllStats();
     if(tab==="map") renderMap();
+    if(tab==="exams") renderExams();
     if(tab==="shop") renderShop();
     if(tab==="settings"){ renderThemeSettings(); renderSettingsToggles(); }
   };
@@ -2155,6 +2179,8 @@ function openTextSource(query){
   window.open("https://ilibrary.ru/search/index.php?q=" + encodeURIComponent(query), "_blank");
 }
 
+let pendingWatchTopic = null, pendingWatchQuery = null;
+
 document.getElementById("startWatchBtn").onclick = () => {
   if(!checkDailyLimitOk()) return;
   if(!selectedLesson){
@@ -2182,6 +2208,8 @@ document.getElementById("startWatchBtn").onclick = () => {
   setupCheatSheet(topic);
 
   if(isLitSelected() && litMode === "text"){
+    document.getElementById("watchChoiceWrap").classList.add("hidden");
+    document.getElementById("watchActiveWrap").classList.remove("hidden");
     videoWrap.classList.add("hidden");
     textWrap.classList.remove("hidden");
     document.getElementById("textSourceTitle").textContent = "Текст: " + topic;
@@ -2193,13 +2221,44 @@ document.getElementById("startWatchBtn").onclick = () => {
     return;
   }
 
+  pendingWatchTopic = topic;
+  pendingWatchQuery = query;
   textWrap.classList.add("hidden");
   videoWrap.classList.add("hidden");
   document.getElementById("watchStepEmoji").innerHTML = icon("play");
-  document.getElementById("watchStepTitle").textContent = "Смотри внимательно";
-  window.open("https://rutube.ru/search/?query=" + encodeURIComponent(query), "_blank");
+  document.getElementById("watchStepTitle").textContent = "Как будешь готовиться?";
+  document.getElementById("watchChoiceWrap").classList.remove("hidden");
+  document.getElementById("watchActiveWrap").classList.add("hidden");
   showStep("stepWatch");
+};
+
+document.getElementById("choiceWatchBtn").onclick = () => {
+  document.getElementById("watchChoiceWrap").classList.add("hidden");
+  document.getElementById("watchActiveWrap").classList.remove("hidden");
+  document.getElementById("watchStepTitle").textContent = "Смотри внимательно";
+  window.open("https://rutube.ru/search/?query=" + encodeURIComponent(pendingWatchQuery), "_blank");
   startWatchTimer(150);
+};
+
+document.getElementById("choiceCheatBtn").onclick = () => {
+  document.getElementById("watchChoiceWrap").classList.add("hidden");
+  document.getElementById("watchActiveWrap").classList.remove("hidden");
+  document.getElementById("watchStepTitle").textContent = "Изучи шпаргалку";
+  finishWatchTimer();
+  const wrap = document.getElementById("cheatSheetWrap");
+  const btn = document.getElementById("toggleCheatSheetBtn");
+  const box = document.getElementById("cheatSheetBox");
+  if(wrap && !wrap.classList.contains("hidden")){
+    box.classList.remove("hidden");
+    btn.textContent = "🙈 Скрыть шпаргалку";
+  }
+};
+
+document.getElementById("choiceSkipBtn").onclick = () => {
+  document.getElementById("watchChoiceWrap").classList.add("hidden");
+  document.getElementById("watchActiveWrap").classList.remove("hidden");
+  document.getElementById("watchStepTitle").textContent = "Пропущено";
+  finishWatchTimer();
 };
 
 function finishWatchTimer(){
@@ -3161,6 +3220,55 @@ function buyOrSelectTheme(theme){
   refreshAllStats();
   renderShop();
   saveState();
+}
+
+// ---- EXAMS TAB ----
+const EXAM_TYPES = [
+  { id:"oge", title:"ОГЭ", sub:"9 класс — основной государственный экзамен", icon:"medal",
+    links:[
+      { label:"Варианты и банк заданий (Решу ОГЭ)", url:"https://oge.sdamgia.ru/" },
+      { label:"Официальные демоверсии (ФИПИ)", url:"https://fipi.ru/oge/demoversii-specifikacii-kodifikatory" }
+    ] },
+  { id:"ege", title:"ЕГЭ", sub:"11 класс — единый государственный экзамен", icon:"trophy",
+    links:[
+      { label:"Варианты и банк заданий (Решу ЕГЭ)", url:"https://ege.sdamgia.ru/" },
+      { label:"Официальные демоверсии (ФИПИ)", url:"https://fipi.ru/ege" }
+    ] },
+  { id:"vpr", title:"ВПР", sub:"Всероссийские проверочные работы, 4–11 класс", icon:"clipboard",
+    links:[
+      { label:"Варианты и демоверсии (Решу ВПР)", url:"https://vpr.sdamgia.ru/" },
+      { label:"Официальный портал ВПР (ФИОКО)", url:"https://fioco.ru/nav-vpr-oo" }
+    ] },
+  { id:"mcko", title:"МЦКО", sub:"Диагностики Московского центра качества образования", icon:"chart",
+    links:[
+      { label:"Сайт МЦКО", url:"https://mcko.ru/" },
+      { label:"Демоверсии диагностик", url:"https://pak-test.mcko.ru/pages/demo-diagnostics" }
+    ] }
+];
+function renderExams(){
+  const grid = document.getElementById("examsGrid");
+  if(!grid) return;
+  grid.innerHTML = "";
+  EXAM_TYPES.forEach(ex=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <div class="emoji" style="width:38px;height:38px;border-radius:11px;flex-shrink:0;">${icon(ex.icon)}</div>
+        <div>
+          <div style="font-weight:800;font-size:13.5px;">${ex.title}</div>
+          <div style="font-size:11px;color:var(--muted);">${ex.sub}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${ex.links.map(l=>`<button class="btn btn-secondary exam-link-btn" data-url="${l.url}" style="text-align:left;">${l.label}</button>`).join("")}
+      </div>
+    `;
+    card.querySelectorAll(".exam-link-btn").forEach(b=>{
+      b.onclick = () => window.open(b.dataset.url, "_blank");
+    });
+    grid.appendChild(card);
+  });
 }
 
 // ---- MAP / PROGRESS ----

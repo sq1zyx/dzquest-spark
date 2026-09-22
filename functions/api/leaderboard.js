@@ -79,15 +79,23 @@ export async function onRequestPost(context) {
   }
 
   if(action === "list"){
+    const cache = caches.default;
+    const cacheKey = new Request(new URL("/api/leaderboard-list-cache", request.url), { method: "GET" });
+    const cached = await cache.match(cacheKey);
+    if(cached) return cached;
+
     const list = await loadIndex(KV);
     const top = (arr, key, n) => arr.slice().sort((a,b) => b[key] - a[key]).slice(0, n)
       .map(e => ({ name: e.name, code: e.code, coins: e.coins, streak: e.streak, longestStreak: e.longestStreak, topics: e.topics, grade: e.grade }));
-    return jsonResponse({
+    const payload = jsonResponse({
       ok: true,
       byTopics: top(list, "topics", 20),
       byStreak: top(list, "longestStreak", 20),
       byCoins: top(list, "coins", 20),
     });
+    payload.headers.set("Cache-Control", "public, max-age=20");
+    context.waitUntil(cache.put(cacheKey, payload.clone()));
+    return payload;
   }
 
   return jsonResponse({ ok: false, error: "Неизвестное действие" }, 400);

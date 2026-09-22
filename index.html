@@ -536,9 +536,10 @@
 
             <div id="litModeWrap" class="hidden">
               <label>Источник по литературе</label>
-              <div style="display:flex;gap:6px;margin-top:4px;">
+              <div style="display:flex;gap:6px;margin-top:4px;flex-wrap:wrap;">
                 <div class="chip picked" id="litModeVideo" data-mode="video"><svg class="ico" style="width:12px;height:12px;"><use href="#icon-video"></use></svg> Видеоурок</div>
                 <div class="chip" id="litModeText" data-mode="text"><svg class="ico" style="width:12px;height:12px;"><use href="#icon-bookopen"></use></svg> Текст произведения</div>
+                <div class="chip" id="litModeBrief" data-mode="brief"><svg class="ico" style="width:12px;height:12px;"><use href="#icon-bookopen"></use></svg> Кратко (Брифли)</div>
               </div>
             </div>
 
@@ -577,8 +578,8 @@
             <div id="textSourceWrap" class="hidden card" style="text-align:center;">
               <div class="emoji" style="width:44px;height:44px;margin:0 auto 6px;border-radius:14px;"><svg class="ico" style="width:22px;height:22px;"><use href="#icon-bookopen"></use></svg></div>
               <div style="font-weight:800;margin:6px 0 4px;" id="textSourceTitle">Текст произведения</div>
-              <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Открой текст на сайте-библиотеке и прочитай нужный отрывок или произведение целиком.</div>
-              <button class="btn btn-secondary" id="openTextSiteBtn"><svg class="ico" style="width:13px;height:13px;"><use href="#icon-link"></use></svg> Открыть текст произведения</button>
+              <div style="font-size:12px;color:var(--muted);margin-bottom:10px;" id="textSourceDesc">Открой текст на сайте-библиотеке и прочитай нужный отрывок или произведение целиком.</div>
+              <button class="btn btn-secondary" id="openTextSiteBtn"><svg class="ico" style="width:13px;height:13px;"><use href="#icon-link"></use></svg> <span id="textSourceBtnLabel">Открыть текст произведения</span></button>
             </div>
             <div class="progress-bar"><div class="progress-fill" id="watchFill" style="width:0%"></div></div>
             <div class="watch-timer" id="watchTimerText">Осталось 2:30</div>
@@ -2351,16 +2352,28 @@ document.getElementById("litModeVideo").onclick = () => {
   litMode = "video";
   document.getElementById("litModeVideo").classList.add("picked");
   document.getElementById("litModeText").classList.remove("picked");
+  document.getElementById("litModeBrief").classList.remove("picked");
 };
 document.getElementById("litModeText").onclick = () => {
   litMode = "text";
   document.getElementById("litModeText").classList.add("picked");
   document.getElementById("litModeVideo").classList.remove("picked");
+  document.getElementById("litModeBrief").classList.remove("picked");
+};
+document.getElementById("litModeBrief").onclick = () => {
+  litMode = "brief";
+  document.getElementById("litModeBrief").classList.add("picked");
+  document.getElementById("litModeVideo").classList.remove("picked");
+  document.getElementById("litModeText").classList.remove("picked");
 };
 
 // Поиск текста произведения на легальной библиотеке (ilibrary.ru).
 function openTextSource(query){
   window.open("https://ilibrary.ru/search/index.php?q=" + encodeURIComponent(query), "_blank");
+}
+// Поиск краткого содержания произведения на Брифли (briefly.ru).
+function openBriefSource(query){
+  window.open("https://briefly.ru/search/?q=" + encodeURIComponent(query), "_blank");
 }
 
 let pendingWatchTopic = null, pendingWatchQuery = null;
@@ -2391,17 +2404,22 @@ document.getElementById("startWatchBtn").onclick = () => {
   const query = selectedLesson.query;
   setupCheatSheet(topic);
 
-  if(isLitSelected() && litMode === "text"){
+  if(isLitSelected() && (litMode === "text" || litMode === "brief")){
     document.getElementById("watchChoiceWrap").classList.add("hidden");
     document.getElementById("watchActiveWrap").classList.remove("hidden");
     videoWrap.classList.add("hidden");
     textWrap.classList.remove("hidden");
-    document.getElementById("textSourceTitle").textContent = "Текст: " + topic;
-    document.getElementById("openTextSiteBtn").onclick = () => openTextSource(topic + " текст произведения читать");
+    const isBrief = litMode === "brief";
+    document.getElementById("textSourceTitle").textContent = (isBrief ? "Краткое содержание: " : "Текст: ") + topic;
+    document.getElementById("textSourceDesc").textContent = isBrief
+      ? "Открой краткое содержание на Брифли — удобно быстро вспомнить сюжет перед проверкой."
+      : "Открой текст на сайте-библиотеке и прочитай нужный отрывок или произведение целиком.";
+    document.getElementById("textSourceBtnLabel").textContent = isBrief ? "Открыть на Брифли" : "Открыть текст произведения";
+    document.getElementById("openTextSiteBtn").onclick = () => isBrief ? openBriefSource(topic) : openTextSource(topic + " текст произведения читать");
     document.getElementById("watchStepEmoji").innerHTML = icon("bookopen");
-    document.getElementById("watchStepTitle").textContent = "Читай внимательно";
+    document.getElementById("watchStepTitle").textContent = isBrief ? "Прочитай краткое содержание" : "Читай внимательно";
     showStep("stepWatch");
-    startWatchTimer(90);
+    startWatchTimer(isBrief ? 60 : 90);
     return;
   }
 

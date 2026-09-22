@@ -1554,7 +1554,7 @@ async function saveState(){
   submitLeaderboardEntry();
 }
 
-const LEADERBOARD_API = "/api/leaderboard";
+const LEADERBOARD_API = "https://api.spark-quest.ru/api/leaderboard";
 let leaderboardCache = null;
 let leaderboardSubmitTimer = null;
 
@@ -1596,7 +1596,7 @@ async function fetchLeaderboard(force){
 }
 
 // ---------- ОБЛАЧНЫЙ АККАУНТ (логин + пароль, синхронизация между устройствами) ----------
-const CLOUD_API = "/api/account";
+const CLOUD_API = "https://api.spark-quest.ru/api/account";
 let cloudBusy = false;
 let cloudAuthMode = "login";
 
@@ -2775,7 +2775,7 @@ async function requestAiExplanation(idx, btn){
   btn.textContent = "⏳ ИИ думает…";
   out.innerHTML = "";
   try{
-    const resp = await fetch("/api/explain", {
+    const resp = await fetch("https://api.spark-quest.ru/api/explain", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

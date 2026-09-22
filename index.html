@@ -682,6 +682,10 @@
         </div>
 
         <div class="card">
+          <button class="btn" id="openTopBtn"><svg class="ico stat-ic--sm"><use href="#icon-trophy"></use></svg> Топ игроков</button>
+        </div>
+
+        <div class="card">
           <label>Имя</label>
           <input type="text" id="profNameInput" placeholder="Например: Саша" style="margin-top:6px;">
           <label style="display:block;margin-top:12px;">Код для родителя</label>
@@ -717,6 +721,10 @@
           <div class="settings-toggle-row">
             <div class="label"><svg class="ico stat-ic"><use href="#icon-bell"></use></svg> Вечернее напоминание<small>Если квест на сегодня не пройден (в 19:00)</small></div>
             <button class="switch" id="reminderToggle" aria-label="Вечернее напоминание"></button>
+          </div>
+          <div class="settings-toggle-row">
+            <div class="label"><svg class="ico stat-ic"><use href="#icon-trophy"></use></svg> Показывать меня в общем топе<small>Имя и результаты будут видны всем в разделе «Топ игроков»</small></div>
+            <button class="switch" id="lbOptInToggle" aria-label="Показывать меня в общем топе"></button>
           </div>
         </div>
 
@@ -754,7 +762,7 @@
           <div style="font-weight:800;font-size:14px;margin-bottom:4px;">Экзамены и проверочные</div>
           <div style="font-size:12px;color:var(--muted);">Официальные банки заданий и демоверсии. Открываются на внешних сайтах.</div>
         </div>
-        <div class="section-title">Выбери, что готовить</div>
+        <div class="section-title" id="examsSectionTitle">Выбери экзамен</div>
         <div id="examsGrid" style="display:flex;flex-direction:column;gap:8px;"></div>
       </div>
     </div>
@@ -918,6 +926,24 @@
       <button class="btn" id="cloudAuthSubmit" style="margin-top:12px;">Войти</button>
       <button class="btn btn-secondary" id="cloudAuthToggleMode" style="margin-top:8px;">Нет аккаунта? Зарегистрироваться</button>
       <div class="lb-sub" id="cloudAuthStatus" style="margin-top:8px;text-align:center;"></div>
+    </div>
+  </div>
+
+    <!-- TOP / LEADERBOARD MODAL -->
+  <div id="topModal" class="grade-modal hidden">
+    <div class="grade-modal-card card case-modal-card">
+      <button class="modal-close-btn" id="topModalClose" type="button" aria-label="Закрыть">✕</button>
+      <div class="lock-head">
+        <div class="emoji"><svg class="ico"><use href="#icon-trophy"></use></svg></div>
+        <h3>Топ игроков</h3>
+        <p>Общий рейтинг всех, кто занимается в «Спарк»</p>
+      </div>
+      <div style="display:flex;gap:6px;margin:10px 0;">
+        <button class="chip top-cat-btn" data-cat="topics" style="flex:1;">По темам</button>
+        <button class="chip top-cat-btn" data-cat="streak" style="flex:1;">По стрику</button>
+        <button class="chip top-cat-btn" data-cat="coins" style="flex:1;">По осколкам</button>
+      </div>
+      <div id="topListWrap" style="max-height:52vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
     </div>
   </div>
 
@@ -1507,6 +1533,7 @@ async function loadState(){
   renderSettingsToggles();
   renderCloudAccountUI();
   if(state.cloudToken) cloudPull();
+  if(state.myCode) submitLeaderboardEntry();
 
   if(!state.accountType){
     openAuthModal("authStepRole");
@@ -1523,6 +1550,48 @@ async function saveState(){
   catch(e){ console.error(e); }
   publishMe();
   cloudPush();
+  submitLeaderboardEntry();
+}
+
+const LEADERBOARD_API = "/api/leaderboard";
+let leaderboardCache = null;
+let leaderboardSubmitTimer = null;
+
+async function submitLeaderboardEntry(){
+  if(leaderboardSubmitTimer) clearTimeout(leaderboardSubmitTimer);
+  leaderboardSubmitTimer = setTimeout(async () => {
+    if(!state.myCode) return;
+    try{
+      await fetch(LEADERBOARD_API, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          action: "submit",
+          code: state.myCode,
+          name: state.childName || "Ученик",
+          coins: state.coins,
+          streak: state.streak,
+          longestStreak: state.longestStreak,
+          topics: state.totalCompleted,
+          grade: state.grade,
+          optIn: state.lbOptIn !== false,
+        }),
+      });
+    }catch(e){ console.warn("Не удалось отправить результат в общий топ:", e.message); }
+  }, 1200);
+}
+
+async function fetchLeaderboard(force){
+  if(leaderboardCache && !force) return leaderboardCache;
+  const res = await fetch(LEADERBOARD_API, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ action: "list" }),
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.error || "Не удалось загрузить топ");
+  leaderboardCache = data;
+  return data;
 }
 
 // ---------- ОБЛАЧНЫЙ АККАУНТ (логин + пароль, синхронизация между устройствами) ----------
@@ -2166,7 +2235,7 @@ document.querySelectorAll(".tab-btn").forEach(btn=>{
     document.getElementById("settingsTab").classList.toggle("hidden", tab!=="settings");
     if(tab==="profile") refreshAllStats();
     if(tab==="map") renderMap();
-    if(tab==="exams") renderExams();
+    if(tab==="exams"){ examsStep = "types"; renderExams(); }
     if(tab==="shop") renderShop();
     if(tab==="settings"){ renderThemeSettings(); renderSettingsToggles(); }
   };
@@ -3303,12 +3372,19 @@ function renderThemeSettings(){
 function renderSettingsToggles(){
   const vibBtn = document.getElementById("vibrationToggle");
   if(vibBtn) vibBtn.classList.toggle("on", !!state.vibrationEnabled);
+  const lbBtn = document.getElementById("lbOptInToggle");
+  if(lbBtn) lbBtn.classList.toggle("on", state.lbOptIn !== false);
 }
 document.getElementById("vibrationToggle").onclick = () => {
   state.vibrationEnabled = !state.vibrationEnabled;
   renderSettingsToggles();
   saveState();
   if(state.vibrationEnabled) vibrate(20);
+};
+document.getElementById("lbOptInToggle").onclick = () => {
+  state.lbOptIn = state.lbOptIn === false ? true : false;
+  renderSettingsToggles();
+  saveState();
 };
 
 function buyOrSelectTheme(theme){
@@ -3339,51 +3415,109 @@ function buyOrSelectTheme(theme){
 
 // ---- EXAMS TAB ----
 const EXAM_TYPES = [
-  { id:"oge", title:"ОГЭ", sub:"9 класс — основной государственный экзамен", icon:"medal",
-    links:[
-      { label:"Варианты и банк заданий (Решу ОГЭ)", url:"https://oge.sdamgia.ru/" },
-      { label:"Официальные демоверсии (ФИПИ)", url:"https://fipi.ru/oge/demoversii-specifikacii-kodifikatory" }
-    ] },
-  { id:"ege", title:"ЕГЭ", sub:"11 класс — единый государственный экзамен", icon:"trophy",
-    links:[
-      { label:"Варианты и банк заданий (Решу ЕГЭ)", url:"https://ege.sdamgia.ru/" },
-      { label:"Официальные демоверсии (ФИПИ)", url:"https://fipi.ru/ege" }
-    ] },
-  { id:"vpr", title:"ВПР", sub:"Всероссийские проверочные работы, 4–11 класс", icon:"clipboard",
-    links:[
-      { label:"Варианты и демоверсии (Решу ВПР)", url:"https://vpr.sdamgia.ru/" },
-      { label:"Официальный портал ВПР (ФИОКО)", url:"https://fioco.ru/nav-vpr-oo" }
-    ] },
-  { id:"mcko", title:"МЦКО", sub:"Диагностики Московского центра качества образования", icon:"chart",
-    links:[
-      { label:"Сайт МЦКО", url:"https://mcko.ru/" },
-      { label:"Демоверсии диагностик", url:"https://pak-test.mcko.ru/pages/demo-diagnostics" }
-    ] }
+  { id:"oge", title:"ОГЭ", sub:"9 класс — основной государственный экзамен", icon:"medal" },
+  { id:"ege", title:"ЕГЭ", sub:"11 класс — единый государственный экзамен", icon:"trophy" },
+  { id:"vpr", title:"ВПР", sub:"Всероссийские проверочные работы, 4–11 класс", icon:"clipboard" },
+  { id:"mcko", title:"МЦКО", sub:"Диагностики Московского центра качества образования", icon:"chart" }
 ];
+const EXAM_SDAMGIA_CODE = { math:"math", rus:"rus", phys:"phys", chem:"chem", bio:"bio", geo:"geo", soc:"soc", info:"inf", eng:"en", hist:"hist" };
+let examsStep = "types";
+let examsSelectedType = null;
+let examsSelectedSubject = null;
+
+function getExamSubjectIds(){
+  const ids = state.grade ? (GRADE_SUBJECTS[state.grade] || []) : Object.keys(SUBJECT_NAMES);
+  return ids.length ? ids : Object.keys(SUBJECT_NAMES);
+}
+
+function getExamLinks(typeId, subjectId){
+  const subjName = SUBJECT_NAMES[subjectId] || subjectId;
+  const code = EXAM_SDAMGIA_CODE[subjectId];
+  const links = [];
+  if(typeId === "oge"){
+    if(code) links.push({ label: "Варианты и банк заданий — " + subjName, url: "https://" + code + "-oge.sdamgia.ru/" });
+    links.push({ label: "Официальные демоверсии ФИПИ", url: "https://fipi.ru/oge/demoversii-specifikacii-kodifikatory" });
+  } else if(typeId === "ege"){
+    if(code) links.push({ label: "Варианты и банк заданий — " + subjName, url: "https://" + code + "-ege.sdamgia.ru/" });
+    links.push({ label: "Официальные демоверсии ФИПИ", url: "https://fipi.ru/ege" });
+  } else if(typeId === "vpr"){
+    if(code && state.grade) links.push({ label: "Варианты — " + subjName + ", " + state.grade + " класс", url: "https://" + code + state.grade + "-vpr.sdamgia.ru/" });
+    links.push({ label: "Варианты и демоверсии (Решу ВПР)", url: "https://vpr.sdamgia.ru/" });
+    links.push({ label: "Официальный портал ВПР (ФИОКО)", url: "https://fioco.ru/nav-vpr-oo" });
+  } else if(typeId === "mcko"){
+    links.push({ label: "Сайт МЦКО", url: "https://mcko.ru/" });
+    links.push({ label: "Демоверсии диагностик", url: "https://pak-test.mcko.ru/pages/demo-diagnostics" });
+  }
+  return links;
+}
+
+function examsBackBtn(toStep){
+  const b = document.createElement("button");
+  b.className = "btn btn-secondary";
+  b.style.marginBottom = "4px";
+  b.textContent = "← Назад";
+  b.onclick = () => { examsStep = toStep; renderExams(); };
+  return b;
+}
+
 function renderExams(){
   const grid = document.getElementById("examsGrid");
+  const title = document.getElementById("examsSectionTitle");
   if(!grid) return;
   grid.innerHTML = "";
-  EXAM_TYPES.forEach(ex=>{
+
+  if(examsStep === "types"){
+    if(title) title.textContent = "Выбери экзамен";
+    EXAM_TYPES.forEach(ex=>{
+      const card = document.createElement("div");
+      card.className = "card exam-type-card";
+      card.style.cursor = "pointer";
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="emoji" style="width:38px;height:38px;border-radius:11px;flex-shrink:0;">${icon(ex.icon)}</div>
+          <div>
+            <div style="font-weight:800;font-size:13.5px;">${ex.title}</div>
+            <div style="font-size:11px;color:var(--muted);">${ex.sub}</div>
+          </div>
+        </div>
+      `;
+      card.onclick = () => { examsSelectedType = ex.id; examsStep = "subjects"; renderExams(); };
+      grid.appendChild(card);
+    });
+    return;
+  }
+
+  if(examsStep === "subjects"){
+    const ex = EXAM_TYPES.find(e => e.id === examsSelectedType);
+    if(title) title.textContent = "Выбери предмет — " + (ex ? ex.title : "");
+    grid.appendChild(examsBackBtn("types"));
+    const wrap = document.createElement("div");
+    wrap.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:8px;";
+    getExamSubjectIds().forEach(sid=>{
+      const btn = document.createElement("button");
+      btn.className = "chip";
+      btn.style.cssText = "text-align:center;padding:10px 6px;";
+      btn.textContent = SUBJECT_NAMES[sid] || sid;
+      btn.onclick = () => { examsSelectedSubject = sid; examsStep = "links"; renderExams(); };
+      wrap.appendChild(btn);
+    });
+    grid.appendChild(wrap);
+    return;
+  }
+
+  if(examsStep === "links"){
+    const ex = EXAM_TYPES.find(e => e.id === examsSelectedType);
+    const subjName = SUBJECT_NAMES[examsSelectedSubject] || examsSelectedSubject;
+    if(title) title.textContent = (ex ? ex.title : "") + " — " + subjName;
+    grid.appendChild(examsBackBtn("subjects"));
     const card = document.createElement("div");
     card.className = "card";
-    card.innerHTML = `
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <div class="emoji" style="width:38px;height:38px;border-radius:11px;flex-shrink:0;">${icon(ex.icon)}</div>
-        <div>
-          <div style="font-weight:800;font-size:13.5px;">${ex.title}</div>
-          <div style="font-size:11px;color:var(--muted);">${ex.sub}</div>
-        </div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;">
-        ${ex.links.map(l=>`<button class="btn btn-secondary exam-link-btn" data-url="${l.url}" style="text-align:left;">${l.label}</button>`).join("")}
-      </div>
-    `;
-    card.querySelectorAll(".exam-link-btn").forEach(b=>{
-      b.onclick = () => window.open(b.dataset.url, "_blank");
-    });
+    const links = getExamLinks(examsSelectedType, examsSelectedSubject);
+    card.innerHTML = `<div style="display:flex;flex-direction:column;gap:6px;">${links.map(l=>`<button class="btn btn-secondary exam-link-btn" data-url="${l.url}" style="text-align:left;">${l.label}</button>`).join("")}</div>`;
+    card.querySelectorAll(".exam-link-btn").forEach(b=>{ b.onclick = () => window.open(b.dataset.url, "_blank"); });
     grid.appendChild(card);
-  });
+    return;
+  }
 }
 
 // ---- MAP / PROGRESS ----
@@ -3577,6 +3711,49 @@ document.getElementById("cloudLogoutBtn").onclick = async () => {
   renderCloudAccountUI();
 };
 
+let topCategory = "topics";
+function openTopModal(){
+  document.getElementById("topModal").classList.remove("hidden");
+  setTopCategory(topCategory);
+}
+function closeTopModal(){ document.getElementById("topModal").classList.add("hidden"); }
+function setTopCategory(cat){
+  topCategory = cat;
+  document.querySelectorAll(".top-cat-btn").forEach(b => b.classList.toggle("on", b.dataset.cat === cat));
+  renderTopList();
+}
+async function renderTopList(){
+  const wrap = document.getElementById("topListWrap");
+  if(!wrap) return;
+  wrap.innerHTML = `<div class="lb-sub" style="text-align:center;padding:16px 0;">Загружаю топ...</div>`;
+  let data;
+  try{ data = await fetchLeaderboard(); }
+  catch(e){
+    wrap.innerHTML = `<div class="lb-sub" style="text-align:center;padding:16px 0;">Не удалось загрузить топ. Проверь интернет.</div>`;
+    return;
+  }
+  const key = topCategory === "topics" ? "byTopics" : topCategory === "streak" ? "byStreak" : "byCoins";
+  const valueKey = topCategory === "topics" ? "topics" : topCategory === "streak" ? "longestStreak" : "coins";
+  const list = data[key] || [];
+  if(!list.length){
+    wrap.innerHTML = `<div class="lb-sub" style="text-align:center;padding:16px 0;">Пока никого нет в топе. Стань первым!</div>`;
+    return;
+  }
+  const medal = i => i===0 ? "🥇" : i===1 ? "🥈" : i===2 ? "🥉" : (i+1) + ".";
+  wrap.innerHTML = list.map((e,i) => `
+    <div class="card" style="display:flex;align-items:center;gap:10px;padding:10px 12px;${e.code===state.myCode ? "border-color:var(--accent);" : ""}">
+      <div style="font-weight:800;font-size:14px;width:26px;text-align:center;">${medal(i)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.name}${e.code===state.myCode ? " (ты)" : ""}</div>
+        <div style="font-size:11px;color:var(--muted);">${e.grade ? e.grade + " класс" : ""}</div>
+      </div>
+      <div style="font-weight:800;font-size:14px;">${e[valueKey]}</div>
+    </div>
+  `).join("");
+}
+document.getElementById("openTopBtn").onclick = () => { leaderboardCache = null; openTopModal(); };
+document.getElementById("topModalClose").onclick = closeTopModal;
+document.querySelectorAll(".top-cat-btn").forEach(b => { b.onclick = () => setTopCategory(b.dataset.cat); });
 // ---- привязка из вкладки родителя ----
 document.getElementById("linkBtn").onclick = async () => {
   const raw = document.getElementById("linkCodeInput").value;

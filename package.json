@@ -1,0 +1,16 @@
+{
+  "name": "otschet-gia",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Отсчёт до ГИА — таймер и план подготовки к ОГЭ и ЕГЭ",
+  "scripts": {
+    "sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}

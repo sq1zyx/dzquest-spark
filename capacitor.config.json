@@ -1,0 +1,8 @@
+{
+  "appId": "ru.sparkquest.gia",
+  "appName": "Отсчёт до ГИА",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#1b2f86"
+  }
+}

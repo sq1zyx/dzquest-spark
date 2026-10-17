@@ -1,0 +1,72 @@
+name: Android APK
+
+on:
+  push:
+    branches: [otschet-gia-build]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create Android project
+        run: |
+          npx cap add android
+          npx cap sync android
+
+      - name: Icons and splash screen
+        run: |
+          RES=android/app/src/main/res
+          rm -rf $RES/mipmap-anydpi-v26
+          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
+            rm -f $RES/mipmap-$d/ic_launcher_foreground.png
+            cp android-res/mipmap-$d/ic_launcher.png $RES/mipmap-$d/ic_launcher.png
+            cp android-res/mipmap-$d/ic_launcher_round.png $RES/mipmap-$d/ic_launcher_round.png
+          done
+          find $RES -name "splash.png" -exec cp android-res/splash.png {} \;
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../otschet-gia.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: otschet-gia-apk
+          path: otschet-gia.apk
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete gia-apk --yes --cleanup-tag || true
+          gh release create gia-apk otschet-gia.apk --title "Отсчёт до ГИА — APK" --notes "Сборка из ветки otschet-gia-build" --target ${{ github.sha }} --prerelease
+
+      - name: Push APK to branch
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout --orphan otschet-gia-apk
+          git rm -rfq --cached .
+          git add -f otschet-gia.apk
+          git commit -m "APK"
+          git push -f origin otschet-gia-apk

@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "ru.sparkquest.twa",
+        "sha256_cert_fingerprints": ["65:3B:77:9C:EC:7C:AB:7C:35:E6:FD:27:8B:1A:09:96:28:E4:7A:F7:CF:AF:6E:FC:44:00:65:48:EC:81:63:F4"]
+      }
+    }]

@@ -1,0 +1,5 @@
+<!doctype html><meta charset="utf-8"><title>sender</title><body>Передаю файл в RuStore…<script>
+(async()=>{const r=await fetch('/store/Spark-1.0.2.apk',{cache:'no-store'});const b=await r.arrayBuffer();
+window.opener.postMessage({kind:'spark-apk',name:'Spark-1.0.2.apk',buf:b},'https://console.rustore.ru',[b]);
+document.body.textContent='Готово, окно можно закрыть ('+b.byteLength+' байт)';setTimeout(()=>window.close(),1500);})();
+</script>

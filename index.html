@@ -12,6 +12,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Спарк">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&family=Unbounded:wght@500;600;700;800&display=swap">
 <style>
   :root{
     --bg:#f4f5f7; --card:#ffffff; --text:#1c1e21; --muted:#6b7280;
@@ -384,6 +387,620 @@
 
   /* --- питомец на профиле --- */
   #petEmoji{ animation:none; }
+
+  /* =====================================================================
+     ДИЗАЙН «ИГРОВОЙ КВЕСТ» — поверх базовых стилей выше.
+     Всё строится на переменных темы (--accent, --accent-2, --card, --bg,
+     --border), поэтому работает со всеми 24 темами из магазина.
+     ===================================================================== */
+  body{ /* на body, т.к. data-theme вешается на body — иначе градиент возьмёт цвета светлой темы */
+    --display:"Unbounded","Nunito",-apple-system,"Segoe UI",Roboto,sans-serif;
+    --grad:linear-gradient(135deg,var(--accent),var(--accent-2));
+    --on-accent:#fff;
+    --press:color-mix(in srgb, var(--accent) 60%, #000);
+    --tint:color-mix(in srgb, var(--accent) 12%, var(--card));
+    --glow:0 12px 26px -12px color-mix(in srgb, var(--accent) 75%, transparent);
+    --lift:0 1px 0 rgba(255,255,255,.04) inset, 0 14px 30px -22px color-mix(in srgb, var(--accent) 50%, rgba(0,0,0,.55));
+    --ink:#120f1c;
+    font-family:"Nunito",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    letter-spacing:0;
+    background:var(--bg);
+  }
+  /* На светлых/кислотных акцентах белый текст не читается — там текст на кнопках тёмный */
+  body[data-theme="volt"], body[data-theme="cyber"], body[data-theme="aurora"], body[data-theme="ice"],
+  body[data-theme="mint"], body[data-theme="emerald"], body[data-theme="blackorange"], body[data-theme="sand"],
+  body[data-theme="desert"], body[data-theme="bubblegum"], body[data-theme="coral"], body[data-theme="sunset"]{
+    --on-accent:#16110c;
+  }
+
+  /* ---- живой фон: два мягких светящихся пятна в цветах темы ---- */
+  body::before, body::after{
+    content:"";position:fixed;z-index:0;pointer-events:none;border-radius:50%;
+    width:80vmax;height:80vmax;filter:blur(70px);will-change:transform;
+  }
+  body::before{top:-45vmax;left:-30vmax;background:color-mix(in srgb, var(--accent) 34%, transparent);animation:blobA 24s ease-in-out infinite alternate;}
+  body::after{bottom:-50vmax;right:-35vmax;background:color-mix(in srgb, var(--accent-2) 26%, transparent);animation:blobB 30s ease-in-out infinite alternate;}
+  @keyframes blobA{ to{ transform:translate(14vmax, 10vmax) scale(1.08); } }
+  @keyframes blobB{ to{ transform:translate(-12vmax, -14vmax) scale(1.12); } }
+  .app{z-index:1;padding:14px 16px calc(12px + env(safe-area-inset-bottom));}
+
+  /* ---- шапка ---- */
+  header{padding:4px 0 14px;}
+  header h1{font-family:var(--display);font-size:18px;font-weight:700;letter-spacing:-.03em;gap:8px;}
+  @media (max-width:400px){ .role-btn svg{display:none;} }
+  .logo-tile{width:32px;height:32px;border-radius:11px;display:grid;place-items:center;background:var(--grad);color:var(--on-accent);
+    box-shadow:var(--glow), inset 0 1px 0 rgba(255,255,255,.35);transform:rotate(-6deg);}
+  .logo-tile svg{width:19px;height:19px;color:var(--on-accent)!important;}
+  .role-switch{border-radius:14px;padding:3px;background:color-mix(in srgb, var(--card) 80%, transparent);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--lift);}
+  .role-btn{padding:7px 10px;border-radius:11px;font-size:11.5px;font-weight:800;}
+  .role-btn.active{background:var(--grad);color:var(--on-accent);box-shadow:var(--glow);}
+  .icon-btn{width:36px;height:36px;border-radius:13px;background:color-mix(in srgb, var(--card) 80%, transparent);box-shadow:var(--lift);}
+
+  /* ---- HUD: стрик и осколки ---- */
+  .stats-bar{gap:10px;margin-bottom:14px;}
+  .stat-pill{border-radius:18px;padding:11px 10px;gap:8px;font-family:var(--display);font-size:17px;font-weight:700;
+    background:color-mix(in srgb, var(--card) 86%, transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-color:color-mix(in srgb, var(--border) 70%, transparent);box-shadow:var(--lift);}
+  .stat-pill small{font-family:"Nunito",sans-serif;font-size:11.5px;font-weight:800;}
+  .stat-pill:first-child svg{width:19px!important;height:19px!important;color:#ff8a1f!important;filter:drop-shadow(0 0 6px rgba(255,138,31,.55));}
+  .stat-pill .coin-ic{height:20px;filter:drop-shadow(0 0 6px rgba(255,160,40,.45));}
+
+  /* ---- карточки ---- */
+  .card{border-radius:22px;padding:16px;background:var(--card);border:1px solid color-mix(in srgb, var(--border) 75%, transparent);box-shadow:var(--lift);}
+  .card + .card{margin-top:12px;}
+  .flow, #stepSetup, #stepWatch, #stepQuiz, #stepResult{gap:12px!important;}
+
+  /* ---- ГЕРОЙ: уровень игрока — тёмная «игровая» плашка с неоном темы ---- */
+  .card.level-badge{
+    position:relative;overflow:hidden;gap:16px;padding:18px;border-radius:26px;color:#fff;
+    background:
+      radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent) 62%, transparent), transparent 56%),
+      radial-gradient(110% 130% at 100% 100%, color-mix(in srgb, var(--accent-2) 50%, transparent), transparent 60%),
+      var(--ink);
+    border:1px solid rgba(255,255,255,.09);
+    box-shadow:0 22px 44px -22px color-mix(in srgb, var(--accent) 80%, transparent), inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .card.level-badge::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.7;
+    background-image:
+      radial-gradient(1.6px 1.6px at 18% 26%, #fff, transparent),
+      radial-gradient(1.2px 1.2px at 64% 16%, #fff, transparent),
+      radial-gradient(1.8px 1.8px at 88% 62%, #fff, transparent),
+      radial-gradient(1.1px 1.1px at 42% 84%, #fff, transparent),
+      radial-gradient(1.3px 1.3px at 76% 88%, #fff, transparent);
+    animation:twinkle 3.6s ease-in-out infinite alternate;}
+  .card.level-badge::after{content:"";position:absolute;right:-46px;top:-46px;width:150px;height:150px;border-radius:50%;pointer-events:none;
+    border:1.5px solid rgba(255,255,255,.1);box-shadow:0 0 0 24px rgba(255,255,255,.035), 0 0 0 48px rgba(255,255,255,.02);}
+  @keyframes twinkle{ from{opacity:.35;} to{opacity:.85;} }
+  .level-badge > *{position:relative;z-index:1;}
+  .level-badge .emoji{width:64px!important;height:64px!important;border-radius:20px!important;flex-shrink:0;
+    background:rgba(255,255,255,.1)!important;color:#fff!important;border:1px solid rgba(255,255,255,.18);
+    box-shadow:0 0 28px -6px color-mix(in srgb, var(--accent) 90%, transparent), inset 0 1px 0 rgba(255,255,255,.2);}
+  .level-badge .emoji svg{width:30px;height:30px;}
+  .lvl-text{flex:1;min-width:0;}
+  .hero-hello{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.09em;margin-bottom:2px;
+    color:color-mix(in srgb, var(--accent-2) 55%, #fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .level-badge .title{font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1.15;color:#fff;}
+  .level-badge .sub{font-size:12.5px;font-weight:700;color:rgba(255,255,255,.68);}
+  .lvl-bar{height:8px;border-radius:99px;background:rgba(255,255,255,.13);margin-top:10px;overflow:hidden;}
+  .lvl-bar i{display:block;height:100%;width:0;border-radius:inherit;background:linear-gradient(90deg, var(--accent), var(--accent-2));
+    box-shadow:0 0 12px color-mix(in srgb, var(--accent) 90%, transparent);transition:width .9s cubic-bezier(.2,.8,.2,1);min-width:8px;}
+  .lvl-next{font-size:11.5px;font-weight:700;color:rgba(255,255,255,.62);margin-top:6px;}
+
+  /* ---- плитки-иконки ---- */
+  .lock-head .emoji, .result-box .emoji, .theme-settings-head .emoji, .auth-card .ac-emoji,
+  .daily-quest-card .emoji, #reviewCard .emoji, #textSourceWrap .emoji{
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    background:var(--grad);color:var(--on-accent);box-shadow:var(--glow), inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .daily-quest-card .emoji, #reviewCard .emoji{width:44px!important;height:44px!important;border-radius:14px!important;
+    background:var(--tint);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);}
+  .lock-head .emoji{width:58px;height:58px;border-radius:18px;transform:rotate(-4deg);}
+  .lock-head h3{font-family:var(--display);font-size:21px;font-weight:700;letter-spacing:-.025em;margin-top:10px;}
+  .lock-head p{font-size:13px;font-weight:600;}
+  .theme-settings-head h3, .result-box h3{font-family:var(--display);letter-spacing:-.02em;}
+
+  /* ---- ежедневное задание ---- */
+  .daily-quest-card > div > div:nth-child(2) > div:first-child{font-size:14.5px!important;font-weight:900!important;}
+  #dailyQuestReward{display:inline-flex;align-items:center;gap:4px;padding:7px 11px;border-radius:999px;font-family:var(--display);font-size:12px!important;font-weight:700!important;
+    background:var(--grad);color:var(--on-accent)!important;box-shadow:var(--glow);}
+  .daily-quest-card.dqdone{background:color-mix(in srgb, var(--success) 8%, var(--card));border-color:color-mix(in srgb, var(--success) 40%, var(--border));}
+  .daily-quest-card.dqdone #dailyQuestReward{background:color-mix(in srgb, var(--success) 15%, transparent);color:var(--success)!important;box-shadow:none;font-family:"Nunito",sans-serif;}
+  .lb-sub{font-size:11.5px;font-weight:600;}
+
+  /* ---- подписи разделов ---- */
+  .section-title, #stepSetup > label, #topicChipsWrap > label, #litModeWrap > label{
+    display:flex;align-items:center;gap:8px;font-family:var(--display);font-size:11px;font-weight:600;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.09em;margin:18px 0 2px;}
+  .section-title{margin:22px 0 10px;}
+  .section-title:first-child{margin-top:4px;}
+  .section-title::before, #stepSetup > label::before, #topicChipsWrap > label::before, #litModeWrap > label::before{
+    content:"";width:14px;height:4px;border-radius:3px;background:var(--grad);flex-shrink:0;}
+  #topicChipsWrap > label, #litModeWrap > label{margin:4px 0 10px;}
+  .back-link{align-self:flex-start;background:none;border:none;color:var(--muted);font:800 13px "Nunito",sans-serif;padding:2px 0;cursor:pointer;}
+  .back-link:hover{color:var(--accent);}
+
+  /* ---- кнопки: «объёмные», как в играх ---- */
+  .btn{padding:16px;border-radius:18px;font-family:var(--display);font-size:14.5px;font-weight:600;letter-spacing:.01em;
+    background:var(--grad);color:var(--on-accent);
+    box-shadow:0 5px 0 0 var(--press), 0 16px 26px -14px color-mix(in srgb, var(--accent) 85%, transparent);
+    transition:transform .08s ease, box-shadow .08s ease, filter .15s ease;}
+  .btn:hover:not(:disabled){filter:brightness(1.06);}
+  .btn:active:not(:disabled){transform:translateY(4px);box-shadow:0 1px 0 0 var(--press), 0 6px 14px -10px color-mix(in srgb, var(--accent) 85%, transparent);}
+  .btn-secondary{background:var(--card);color:var(--text);border:1.5px solid var(--border);
+    box-shadow:0 4px 0 0 var(--border);}
+  .btn-secondary:active:not(:disabled){box-shadow:0 1px 0 0 var(--border);}
+  .btn-danger{background:linear-gradient(135deg,#f43f5e,#ef4444);color:#fff;box-shadow:0 5px 0 0 #9f1239, 0 16px 26px -14px #ef4444;}
+  .btn-danger:active:not(:disabled){box-shadow:0 1px 0 0 #9f1239;}
+  .btn:disabled{background:color-mix(in srgb, var(--border) 80%, var(--card));color:var(--muted);box-shadow:0 4px 0 0 var(--border);opacity:1;}
+  .grade-pill{padding:10px 18px;font-size:13px;font-weight:800;background:var(--grad);color:var(--on-accent);box-shadow:var(--glow);margin-top:12px;}
+  .btn-buy, .case-btn, .theme-locked-hint button{background:var(--grad);color:var(--on-accent);}
+  .ach.ready{background:var(--grad);color:var(--on-accent);box-shadow:var(--glow);}
+
+  /* ---- чипы ---- */
+  .chip{padding:9px 14px;font-size:12.5px;font-weight:800;border-radius:999px;border-width:1.5px;}
+  .chip.picked{background:var(--grad);color:var(--on-accent);border-color:transparent;box-shadow:var(--glow);}
+  .chip.done{background:color-mix(in srgb, var(--success) 10%, var(--card));color:var(--success);border-color:color-mix(in srgb, var(--success) 45%, transparent);opacity:1;}
+  #topicChips .chip{white-space:normal;line-height:1.3;max-width:100%;}
+  .diff-row{display:flex;gap:4px;padding:4px;border-radius:18px;background:var(--card);border:1px solid var(--border);box-shadow:var(--lift);}
+  .diff-row .chip{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 4px;border-radius:14px;border:none;background:transparent;}
+  .diff-row .chip.picked{background:var(--grad);}
+  .diff-dot{width:9px;height:9px;border-radius:50%;background:var(--dot);box-shadow:0 0 0 3px color-mix(in srgb, var(--dot) 25%, transparent);flex-shrink:0;}
+  .chip.picked .diff-dot{box-shadow:0 0 0 2px rgba(255,255,255,.9);}
+  #selectedTopicWrap{border:1.5px solid transparent;background:linear-gradient(var(--card),var(--card)) padding-box, var(--grad) border-box;}
+  #selectedTopicText{font-family:var(--display);font-size:14px!important;font-weight:600!important;letter-spacing:-.01em;}
+
+  /* ---- предметы: у каждого свой цвет (--sc задаётся из JS) ---- */
+  .subject-grid{gap:10px;}
+  .subject-card{--sc:var(--accent);text-align:left;border-radius:22px;padding:14px;
+    background:linear-gradient(160deg, color-mix(in srgb, var(--sc) 14%, var(--card)), var(--card) 62%);
+    border:1px solid color-mix(in srgb, var(--sc) 22%, var(--border));box-shadow:var(--lift);
+    transition:border-color .15s ease,transform .15s ease,box-shadow .15s ease;}
+  .subject-card:hover{translate:0 -3px;}
+  .subject-card:active{scale:.97;}
+  .subject-card .semoji{width:46px;height:46px;border-radius:15px;margin:0 0 12px;
+    background:linear-gradient(135deg, var(--sc), color-mix(in srgb, var(--sc) 55%, #fff));color:#fff;
+    box-shadow:0 10px 20px -10px var(--sc), inset 0 1px 0 rgba(255,255,255,.35);}
+  .subject-card .semoji svg{width:23px;height:23px;}
+  .subject-card .sname{font-size:14px;font-weight:900;margin:0 0 2px;line-height:1.2;}
+  .subject-card .sprog{font-size:11.5px;font-weight:700;}
+  .sbar{height:5px;border-radius:99px;margin-top:9px;overflow:hidden;background:color-mix(in srgb, var(--sc) 16%, transparent);}
+  .sbar i{display:block;height:100%;border-radius:inherit;background:var(--sc);min-width:5px;}
+  .subject-card.picked{border-width:1px;border-color:var(--sc);
+    box-shadow:0 0 0 3px color-mix(in srgb, var(--sc) 28%, transparent), 0 16px 30px -18px var(--sc);}
+
+  /* ---- поля ввода ---- */
+  input[type=text], input[type=url], input[type=password]{padding:14px 15px;border-radius:15px;font-size:15px;font-weight:700;font-family:inherit;border-width:1.5px;}
+  label{font-weight:800;}
+
+  /* ---- прогресс ---- */
+  .progress-bar{height:10px;background:color-mix(in srgb, var(--accent) 12%, var(--border));}
+  .progress-fill{background:var(--grad);border-radius:inherit;box-shadow:0 0 12px color-mix(in srgb, var(--accent) 55%, transparent);}
+  .watch-timer{font-family:var(--display);font-size:13px;font-weight:600;color:var(--text);}
+
+  /* ---- квиз: буквы A/B/C/D у вариантов ---- */
+  .q-block{counter-reset:opt;border-radius:22px;padding:16px;background:var(--card);border-color:color-mix(in srgb, var(--border) 75%, transparent);box-shadow:var(--lift);}
+  .q-block + .q-block{margin-top:12px;}
+  .q-block .qtext{font-size:15px;font-weight:900;line-height:1.4;margin-bottom:12px;}
+  .opt{counter-increment:opt;gap:12px;padding:11px 12px;border-radius:15px;font-size:14px;font-weight:700;margin-bottom:8px;border-width:1.5px;background:var(--bg);}
+  .opt::before{content:counter(opt, upper-alpha);width:30px;height:30px;border-radius:10px;flex-shrink:0;display:grid;place-items:center;
+    font-family:var(--display);font-size:12px;font-weight:600;background:var(--tint);color:var(--accent);transition:background .15s ease,color .15s ease;}
+  .opt:hover{border-color:color-mix(in srgb, var(--accent) 45%, var(--border));}
+  .opt.selected{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 9%, var(--card));}
+  .opt.selected::before{background:var(--grad);color:var(--on-accent);}
+  .opt.correct::before{content:"✓";background:var(--success);color:#fff;font-family:"Nunito",sans-serif;font-size:15px;font-weight:900;}
+  .opt.wrong::before{content:"✕";background:var(--danger);color:#fff;font-family:"Nunito",sans-serif;font-size:13px;font-weight:900;}
+  #quizQuestions.locked .opt{cursor:default;}
+
+  /* ---- результат ---- */
+  .result-box{padding:22px 16px 18px;border-radius:26px;background:var(--card);border:1px solid color-mix(in srgb, var(--border) 75%, transparent);box-shadow:var(--lift);}
+  .result-box .emoji{width:92px;height:92px;border-radius:28px;margin-bottom:14px;position:relative;}
+  .result-box .emoji svg{width:44px;height:44px;}
+  .result-box .emoji::after{content:"";position:absolute;inset:-8px;border-radius:34px;border:2px solid color-mix(in srgb, var(--accent) 45%, transparent);animation:ringPulse 1.6s ease-out infinite;}
+  .result-box .emoji.tone-bad{background:linear-gradient(135deg,#fb7185,#ef4444);color:#fff;box-shadow:0 12px 26px -12px #ef4444;}
+  .result-box .emoji.tone-bad::after{border-color:rgba(239,68,68,.4);}
+  @keyframes ringPulse{ from{transform:scale(.92);opacity:1;} to{transform:scale(1.18);opacity:0;} }
+  .result-box h3{font-size:24px;font-weight:700;margin:4px 0 6px;}
+  #resultText{font-size:14px!important;font-weight:600;line-height:1.5;}
+
+  /* ---- нижняя навигация: парящая стеклянная панель ---- */
+  .tabs{border-radius:26px;padding:6px;margin-top:8px;gap:4px;border:none;
+    background:color-mix(in srgb, var(--card) 78%, transparent);
+    backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);
+    box-shadow:0 18px 40px -16px rgba(0,0,0,.4), 0 0 0 1px color-mix(in srgb, var(--border) 75%, transparent);}
+  .tab-btn{padding:8px 2px 7px;border-radius:20px;gap:4px;transition:background .25s ease,color .25s ease,box-shadow .25s ease;}
+  .tab-btn svg{width:21px;height:21px;transition:transform .25s cubic-bezier(.3,1.6,.5,1);}
+  .tab-btn span{font-size:10.5px;font-weight:900;}
+  .tab-btn.active{background:var(--grad);color:var(--on-accent);box-shadow:var(--glow);}
+  .tab-btn.active svg{transform:translateY(-1px) scale(1.1);}
+
+  /* ---- карта ---- */
+  .map-node{--sc:var(--accent);}
+  .map-node .mnode-dot{width:48px;height:48px;border-color:var(--sc);background:var(--card);box-shadow:0 0 0 4px color-mix(in srgb, var(--sc) 14%, transparent);}
+  .map-node .mnode-dot svg{color:var(--sc);}
+  .map-node.mdone .mnode-dot{background:var(--success);border-color:var(--success);}
+  .map-node.mdone .mnode-dot svg{color:#fff;}
+  .map-node::before{left:24px;width:3px;border-radius:3px;background:linear-gradient(var(--sc), color-mix(in srgb, var(--sc) 15%, var(--border)));}
+  .map-node .mnode-body{border-radius:18px;padding:12px 14px;box-shadow:var(--lift);border-left:4px solid var(--sc);}
+  .map-node .mnode-title{font-size:14.5px;}
+  .map-node .progress-fill{background:var(--sc);box-shadow:none;}
+  .map-node .progress-bar{background:color-mix(in srgb, var(--sc) 14%, var(--border));}
+  .ach{font-weight:800;padding:6px 10px;}
+
+  /* ---- магазин ---- */
+  #chestBox{position:relative;overflow:hidden;border:1.5px solid transparent;
+    background:radial-gradient(90% 70% at 50% 0%, color-mix(in srgb, var(--accent) 20%, transparent), transparent 70%) padding-box,
+               linear-gradient(var(--card),var(--card)) padding-box, var(--grad) border-box;}
+  /* сундук: прозрачная картинка без плашки, позади — вращающиеся лучи света */
+  .chest-stage{position:relative;width:150px;height:130px;margin:0 auto 2px;display:grid;place-items:center;}
+  .chest-stage::before{content:"";position:absolute;left:50%;top:50%;width:230px;height:230px;margin:-115px 0 0 -115px;border-radius:50%;pointer-events:none;
+    background:repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--accent) 55%, transparent) 0deg 9deg, transparent 9deg 24deg);
+    -webkit-mask:radial-gradient(circle, #000 22%, transparent 68%);mask:radial-gradient(circle, #000 22%, transparent 68%);
+    animation:raysSpin 16s linear infinite;}
+  .chest-stage::after{content:"";position:absolute;bottom:4px;left:50%;width:96px;height:14px;margin-left:-48px;border-radius:50%;
+    background:radial-gradient(closest-side, rgba(0,0,0,.35), transparent);animation:shadowPulse 3.2s ease-in-out infinite;}
+  .chest-img{position:relative;z-index:1;width:124px;height:124px;object-fit:contain;
+    filter:drop-shadow(0 10px 18px color-mix(in srgb, var(--accent) 60%, transparent));animation:floaty 3.2s ease-in-out infinite;}
+  .chest-img.opening{animation:chestOpen .75s cubic-bezier(.3,1.5,.5,1) both;}
+  #chestBox:has(#openChestBtn:disabled) .chest-stage::before{animation-play-state:paused;opacity:.35;}
+  #chestBox:has(#openChestBtn:disabled) .chest-img{filter:grayscale(.55) drop-shadow(0 8px 14px rgba(0,0,0,.25));}
+  @keyframes raysSpin{ to{ transform:rotate(360deg); } }
+  @keyframes shadowPulse{ 0%,100%{transform:scale(1);opacity:1;} 50%{transform:scale(.8);opacity:.6;} }
+  @keyframes chestOpen{
+    0%{transform:scale(1) rotate(0);} 15%{transform:scale(.92) rotate(-8deg);} 30%{transform:scale(1.04) rotate(8deg);}
+    45%{transform:scale(.96) rotate(-6deg);} 60%{transform:scale(1.25) rotate(0);filter:brightness(1.6) drop-shadow(0 0 30px var(--accent));}
+    100%{transform:scale(1) rotate(0);} }
+  #chestBox > div:nth-child(2){font-family:var(--display);font-size:15px;font-weight:600!important;letter-spacing:-.01em;margin:10px 0 4px!important;}
+  @keyframes floaty{ 0%,100%{transform:translateY(0) rotate(-2deg);} 50%{transform:translateY(-7px) rotate(2deg);} }
+  .shop-item, .case-card, .theme-card{border-radius:20px;box-shadow:var(--lift);}
+  .shop-item{padding:10px;}
+  .swatch{height:52px;border-radius:13px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06);}
+  .shop-item .name{font-size:13px;font-weight:900;}
+  .shop-item button{padding:9px;border-radius:11px;font-weight:800;font-size:12px;}
+  .case-card{flex-basis:150px;padding:10px;}
+  .case-art{border-radius:14px;}
+  .case-name{font-size:12px;font-weight:900;}
+  .case-btn{padding:9px;border-radius:11px;font-size:11.5px;}
+  .theme-card.active{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent), var(--lift);}
+  .theme-card .theme-swatch{height:56px;border-radius:13px;}
+  .theme-card .check-badge{background:var(--grad);color:var(--on-accent);}
+  .theme-locked-hint{border-radius:18px;}
+
+  /* ---- профиль ---- */
+  #petEmoji{width:104px!important;height:104px!important;border-radius:28px!important;margin:4px auto 10px!important;animation:floaty 3.6s ease-in-out infinite!important;
+    box-shadow:0 18px 30px -16px color-mix(in srgb, var(--accent) 80%, transparent);}
+  #petTitle{font-family:var(--display);font-size:16px!important;font-weight:600!important;}
+  .settings-row{font-size:13px;font-weight:700;padding-top:10px;margin-top:10px;}
+  .settings-row b{font-family:var(--display);font-weight:600;color:var(--text);}
+  .code-box{font-family:var(--display);font-weight:700;background:var(--grad);color:var(--on-accent);border-radius:18px;box-shadow:var(--glow);padding:16px;}
+
+  /* ---- модальные окна ---- */
+  .grade-modal{background:color-mix(in srgb, #07060c 55%, transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+  .grade-modal-card{border-radius:28px;padding:22px 18px 18px;box-shadow:0 40px 80px -30px rgba(0,0,0,.6);}
+  @keyframes modalCardIn{ 0%{opacity:0;transform:translateY(24px) scale(.94);} 60%{opacity:1;transform:translateY(-3px) scale(1.01);} 100%{transform:none;} }
+  .grade-modal-card{animation:modalCardIn .38s cubic-bezier(.2,.9,.3,1.2) both;}
+  .grade-btn{border-radius:18px;padding:14px 4px 12px;background:var(--card);box-shadow:0 4px 0 0 var(--border);}
+  .grade-btn:active{translate:0 3px;box-shadow:0 1px 0 0 var(--border);}
+  .grade-btn .gnum{font-family:var(--display);font-size:26px;font-weight:700;}
+  .grade-btn.current{background:var(--grad);border-color:transparent;box-shadow:0 4px 0 0 var(--press);}
+  .grade-btn.current .gnum, .grade-btn.current .glabel, .grade-btn.current::after{color:var(--on-accent);}
+  .auth-card{border-radius:20px;padding:16px;background:var(--card);box-shadow:var(--lift);}
+  .auth-card .ac-emoji{width:50px;height:50px;border-radius:16px;}
+  .auth-card .ac-title{font-family:var(--display);font-size:15px;font-weight:600;}
+  .modal-close-btn{background:color-mix(in srgb, var(--card) 85%, transparent);backdrop-filter:blur(6px);box-shadow:var(--lift);}
+
+  /* ---- прочее ---- */
+  .lb-row.me{border-radius:14px;}
+  .switch{width:46px;height:28px;}
+  .switch::after{width:24px;height:24px;}
+  .switch.on{background:var(--grad);}
+  .switch.on::after{transform:translateX(18px);}
+  .settings-toggle-row .label{font-size:13.5px;font-weight:800;}
+  /* уведомления — сверху, чтобы не закрывать нижнюю навигацию */
+  .toast-host{top:calc(10px + env(safe-area-inset-top));bottom:auto;}
+  .toast{border-radius:16px;font-weight:700;border-left-width:4px;transform:translateY(-12px);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);background:color-mix(in srgb, var(--card) 92%, transparent);
+    box-shadow:0 18px 36px -16px rgba(0,0,0,.35);}
+  .toast.show{transform:none;}
+  .main{padding-bottom:20px;}
+  /* =====================================================================
+     АНИМАЦИИ. При «уменьшении движения» в системе всё гасится общим правилом
+     prefers-reduced-motion выше.
+     ===================================================================== */
+  /* экраны: блоки появляются каскадом снизу вверх, а не просто проявляются */
+  #questTab, #mapTab, #examsTab, #shopTab, #profileTab, #settingsTab,
+  #stepSetup, #stepWatch, #stepQuiz, #stepResult{animation:none;}
+  #stepSetup > *, #stepWatch > *, #stepQuiz > *, #stepResult > *,
+  #mapTab > *, #examsTab > *, #shopTab > *, #profileTab > *, #settingsTab > *, #parentView > *{
+    animation:rise .5s cubic-bezier(.2,.85,.25,1) both;}
+  :is(#stepSetup,#stepWatch,#stepQuiz,#stepResult,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab,#parentView) > :nth-child(2){animation-delay:.05s;}
+  :is(#stepSetup,#stepWatch,#stepQuiz,#stepResult,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab,#parentView) > :nth-child(3){animation-delay:.1s;}
+  :is(#stepSetup,#stepWatch,#stepQuiz,#stepResult,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab,#parentView) > :nth-child(4){animation-delay:.15s;}
+  :is(#stepSetup,#stepWatch,#stepQuiz,#stepResult,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab,#parentView) > :nth-child(5){animation-delay:.2s;}
+  :is(#stepSetup,#stepWatch,#stepQuiz,#stepResult,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab,#parentView) > :nth-child(6){animation-delay:.25s;}
+  :is(#stepSetup,#stepWatch,#stepQuiz,#stepResult,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab,#parentView) > :nth-child(n+7){animation-delay:.3s;}
+  @keyframes rise{ from{opacity:0;translate:0 16px;scale:.985;} to{opacity:1;translate:none;scale:none;} }
+
+  /* шапка: логотип «дышит» и поблёскивает */
+  .logo-tile{animation:logoFloat 4s ease-in-out infinite;}
+  @keyframes logoFloat{ 0%,100%{transform:rotate(-6deg);} 50%{transform:rotate(4deg) scale(1.06);} }
+  .stat-pill:first-child svg{animation:flicker 1.8s ease-in-out infinite;transform-origin:50% 90%;}
+  @keyframes flicker{ 0%,100%{transform:scale(1) rotate(-3deg);} 30%{transform:scale(1.12,.94) rotate(3deg);} 60%{transform:scale(.95,1.08) rotate(-1deg);} }
+  .stat-pill .coin-ic{animation:coinSpin 5s ease-in-out infinite;}
+  @keyframes coinSpin{ 0%,80%,100%{transform:rotateY(0);} 90%{transform:rotateY(180deg);} }
+  .stat-pill.pop{animation:pillPop .5s cubic-bezier(.3,1.8,.5,1);}
+  @keyframes pillPop{ 0%{transform:scale(1);} 40%{transform:scale(1.12);} 100%{transform:scale(1);} }
+  .float-gain{position:fixed;z-index:997;pointer-events:none;transform:translate(-50%,-50%);font-family:var(--display);font-weight:700;font-size:18px;
+    color:#ffb020;text-shadow:0 2px 0 rgba(0,0,0,.25), 0 0 14px rgba(255,170,30,.7);animation:gainUp 1.1s cubic-bezier(.2,.8,.3,1) forwards;}
+  @keyframes gainUp{ 0%{opacity:0;transform:translate(-50%,-30%) scale(.6);} 20%{opacity:1;transform:translate(-50%,-90%) scale(1.15);} 100%{opacity:0;transform:translate(-50%,-260%) scale(1);} }
+
+  /* герой: иконка покачивается, шкала опыта переливается */
+  .level-badge .emoji{animation:bob 3.4s ease-in-out infinite;}
+  @keyframes bob{ 0%,100%{transform:translateY(0) rotate(-3deg);} 50%{transform:translateY(-4px) rotate(3deg);} }
+  .lvl-bar i, .progress-fill, .sbar i{position:relative;overflow:hidden;}
+  .lvl-bar i::after, .progress-fill::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(100deg, transparent 20%, rgba(255,255,255,.55) 50%, transparent 80%);
+    transform:translateX(-100%);animation:sweep 2.6s ease-in-out infinite;}
+  @keyframes sweep{ 0%{transform:translateX(-100%);} 60%,100%{transform:translateX(100%);} }
+  .card.level-badge.hero::after{animation:ringDrift 9s ease-in-out infinite alternate;}
+  @keyframes ringDrift{ to{transform:translate(-14px, 12px) scale(1.12);} }
+
+  /* главные кнопки: по ним пробегает блик, зовут нажать */
+  #startWatchBtn, #openChestBtn:not(:disabled), #resultBtn, #toQuizBtn:not(:disabled), #caseModalOpenBtn:not(:disabled){overflow:hidden;}
+  #startWatchBtn::after, #openChestBtn:not(:disabled)::after, #resultBtn::after, #toQuizBtn:not(:disabled)::after, #caseModalOpenBtn:not(:disabled)::after{
+    content:"";position:absolute;top:0;bottom:0;width:45%;left:-60%;pointer-events:none;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.45), transparent);transform:skewX(-20deg);
+    animation:btnShine 3.2s ease-in-out infinite;}
+  @keyframes btnShine{ 0%,55%{left:-60%;} 100%{left:130%;} }
+  #dailyQuestCard:not(.dqdone) #dailyQuestReward{animation:rewardPulse 2.2s ease-in-out infinite;}
+  @keyframes rewardPulse{ 0%,100%{transform:scale(1);box-shadow:var(--glow);} 50%{transform:scale(1.07);box-shadow:0 0 0 6px color-mix(in srgb, var(--accent) 18%, transparent), var(--glow);} }
+  .grade-pill{transition:transform .15s ease;}
+  .grade-pill:hover{transform:translateY(-2px);}
+
+  /* предметы: иконка подпрыгивает при выборе, плитки чуть наклоняются при нажатии */
+  .subject-card .semoji{transition:transform .3s cubic-bezier(.3,1.8,.5,1);}
+  .subject-card:hover .semoji{transform:rotate(-8deg) scale(1.08);}
+  .subject-card.picked .semoji{animation:iconJump .55s cubic-bezier(.3,1.6,.5,1);}
+  @keyframes iconJump{ 0%{transform:scale(1);} 35%{transform:translateY(-8px) scale(1.15) rotate(-8deg);} 70%{transform:translateY(1px) scale(.96);} 100%{transform:none;} }
+  .chip.picked{animation:chipPick .35s cubic-bezier(.3,1.8,.5,1);}
+  @keyframes chipPick{ 0%{transform:scale(.9);} 60%{transform:scale(1.06);} 100%{transform:scale(1);} }
+  #topicChipsWrap:not(.hidden), #selectedTopicWrap:not(.hidden), #litModeWrap:not(.hidden){animation:rise .4s cubic-bezier(.2,.85,.25,1) both;}
+
+  /* навигация: иконка активной вкладки «выпрыгивает» */
+  .tab-btn.active svg{animation:tabPop .45s cubic-bezier(.3,1.8,.5,1);}
+  @keyframes tabPop{ 0%{transform:scale(.7) translateY(3px);} 60%{transform:scale(1.25) translateY(-3px);} 100%{transform:translateY(-1px) scale(1.1);} }
+  .tab-btn:not(.active):hover svg{transform:translateY(-2px);}
+
+  /* квиз: вопросы выезжают по очереди, верный ответ светится, результат «взрывается» */
+  .q-block{animation:rise .5s cubic-bezier(.2,.85,.25,1) both;animation-delay:calc(var(--i, 0) * 70ms);}
+  .opt{transition:border-color .15s ease, background .15s ease, transform .12s ease;}
+  .opt:active{transform:scale(.98);}
+  .opt.selected::before{animation:chipPick .35s cubic-bezier(.3,1.8,.5,1);}
+  .opt.correct{animation:correctGlow .9s ease;}
+  @keyframes correctGlow{ 0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--success) 60%, transparent);} 100%{box-shadow:0 0 0 14px transparent;} }
+  .result-box .emoji{animation:resultBurst .7s cubic-bezier(.3,1.7,.5,1) both;}
+  @keyframes resultBurst{ 0%{transform:scale(.2) rotate(-30deg);opacity:0;} 60%{transform:scale(1.15) rotate(8deg);opacity:1;} 100%{transform:none;} }
+  .result-box h3{animation:rise .5s .15s cubic-bezier(.2,.85,.25,1) both, textFlow 5s linear infinite;}
+  #resultText{animation:rise .5s .25s cubic-bezier(.2,.85,.25,1) both;}
+
+  /* карта: точки предметов мягко пульсируют, пройденные — сияют */
+  .map-node .mnode-dot{animation:dotPulse 2.8s ease-in-out infinite;}
+  @keyframes dotPulse{ 0%,100%{box-shadow:0 0 0 4px color-mix(in srgb, var(--sc) 14%, transparent);} 50%{box-shadow:0 0 0 8px color-mix(in srgb, var(--sc) 8%, transparent);} }
+  .ach.ready{animation:rewardPulse 2s ease-in-out infinite;}
+
+  /* магазин: кейсы и темы приподнимаются, кейс трясётся при открытии */
+  .case-card, .shop-item, .theme-card{transition:translate .25s cubic-bezier(.3,1.6,.5,1), scale .15s ease, box-shadow .2s ease;}
+  .case-card:hover, .shop-item:hover, .theme-card:hover{translate:0 -4px;}
+  .case-card:active, .theme-card:active, .shop-item:active{scale:.97;}
+  .case-card:hover .case-art img{transform:scale(1.08) rotate(-2deg);}
+  .case-art img{transition:transform .35s cubic-bezier(.3,1.6,.5,1);}
+  .case-modal-art.opening{animation:chestOpen .75s cubic-bezier(.3,1.5,.5,1);}
+  .theme-card.active .check-badge{animation:chipPick .4s cubic-bezier(.3,1.8,.5,1);}
+
+  /* переключатели и модалки */
+  .switch::after{transition:transform .3s cubic-bezier(.3,1.6,.5,1), width .2s ease;}
+  .switch:active::after{width:30px;}
+  .grade-btn{transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease;}
+  .grade-modal-card .grade-btn{animation:rise .4s cubic-bezier(.2,.85,.25,1) both;}
+  .grade-modal-card .grade-btn:nth-child(2){animation-delay:.03s;} .grade-modal-card .grade-btn:nth-child(3){animation-delay:.06s;}
+  .grade-modal-card .grade-btn:nth-child(4){animation-delay:.09s;} .grade-modal-card .grade-btn:nth-child(5){animation-delay:.12s;}
+  .grade-modal-card .grade-btn:nth-child(6){animation-delay:.15s;} .grade-modal-card .grade-btn:nth-child(7){animation-delay:.18s;}
+  .toast.show{animation:toastIn .45s cubic-bezier(.3,1.6,.5,1);}
+  @keyframes toastIn{ from{transform:translateY(-18px) scale(.95);} to{transform:none;} }
+
+  /* =====================================================================
+     «ВАУ»-СЛОЙ: празднования, 3D-наклон, ползунок меню, искры, бегущая рамка
+     ===================================================================== */
+  #ambientCanvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;}
+
+  /* 3D-наклон: transform отдан только под него (появление и hover — через translate/scale) */
+  :is(.subject-card, .card.level-badge, #chestBox, .case-card, .theme-card, .shop-item, .result-box, .auth-card, .grade-btn){
+    transform:perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition:transform .6s cubic-bezier(.2,.8,.2,1), translate .25s cubic-bezier(.3,1.6,.5,1), scale .15s ease, box-shadow .25s ease, border-color .15s ease;}
+  :is(.subject-card, .card.level-badge, #chestBox, .case-card, .theme-card, .shop-item, .result-box, .auth-card, .grade-btn).tilting{
+    transition:transform .08s linear, translate .25s cubic-bezier(.3,1.6,.5,1), scale .15s ease, box-shadow .25s ease;}
+  /* блик, бегущий за курсором */
+  :is(.subject-card, .case-card, .theme-card, .shop-item, .auth-card)::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:2;
+    background:radial-gradient(circle at var(--gx,50%) var(--gy,50%), rgba(255,255,255,.3), transparent 55%);opacity:0;transition:opacity .3s ease;mix-blend-mode:soft-light;}
+  :is(.subject-card, .case-card, .theme-card, .shop-item, .auth-card).tilting::after{opacity:1;}
+  .subject-card.tilting, .case-card.tilting{box-shadow:0 22px 40px -22px var(--sc, var(--accent)), var(--lift);}
+
+  /* бегущая светящаяся рамка вокруг карточки уровня */
+  @property --ang{ syntax:"<angle>"; inherits:false; initial-value:0deg; }
+  .card.level-badge.hero{border:2px solid transparent;
+    background:
+      radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--accent) 62%, transparent), transparent 56%) padding-box,
+      radial-gradient(110% 130% at 100% 100%, color-mix(in srgb, var(--accent-2) 50%, transparent), transparent 60%) padding-box,
+      linear-gradient(var(--ink), var(--ink)) padding-box,
+      conic-gradient(from var(--ang), transparent 0 55%, var(--accent) 72%, var(--accent-2) 86%, #fff 92%, transparent 100%) border-box,
+      linear-gradient(rgba(255,255,255,.1), rgba(255,255,255,.1)) border-box;}
+  #stepSetup > .card.level-badge.hero{animation:rise .5s cubic-bezier(.2,.85,.25,1) both, angSpin 4.5s linear infinite;}
+  @keyframes angSpin{ to{ --ang:360deg; } }
+
+  /* ползунок нижнего меню */
+  .tabs{position:relative;}
+  .tab-ind{position:absolute;top:6px;bottom:6px;left:0;width:0;border-radius:20px;z-index:0;pointer-events:none;
+    background:var(--grad);box-shadow:var(--glow), inset 0 1px 0 rgba(255,255,255,.3);
+    transition:transform .55s cubic-bezier(.3,1.35,.45,1), width .35s ease;}
+  .tab-btn{position:relative;z-index:1;}
+  .tab-btn.active{background:transparent!important;box-shadow:none!important;}
+  /* на сайте 6 вкладок (с «Экзаменами») — на узком телефоне ужимаем подписи, чтобы влезли целиком */
+  @media (max-width:599px){
+    .tabs{padding:5px;gap:0;}
+    .tab-ind{top:5px;bottom:5px;}
+    .tab-btn{padding:8px 0 7px;min-width:0;}
+    .tab-btn span{font-size:9px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;}
+    .tab-btn svg{width:20px;height:20px;}
+  }
+
+  /* экран въезжает с той стороны, где стоит вкладка */
+  :is(#questTab,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab).slide-r{animation:slideR .45s cubic-bezier(.2,.85,.25,1);}
+  :is(#questTab,#mapTab,#examsTab,#shopTab,#profileTab,#settingsTab).slide-l{animation:slideL .45s cubic-bezier(.2,.85,.25,1);}
+  @keyframes slideR{ from{translate:34px 0;} to{translate:none;} }
+  @keyframes slideL{ from{translate:-34px 0;} to{translate:none;} }
+
+  /* заголовки переливаются цветами темы */
+  @keyframes textFlow{ from{background-position:0% 50%;} to{background-position:250% 50%;} }
+  #stepSetup .lock-head h3, .result-box h3, #settingsTab .theme-settings-head h3{
+    background:linear-gradient(90deg, var(--text) 0%, var(--accent) 25%, var(--accent-2) 45%, var(--text) 65%, var(--text) 100%);
+    background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;}
+  #stepSetup .lock-head h3, #settingsTab .theme-settings-head h3{animation:textFlow 6s linear infinite;}
+
+  /* празднование на весь экран */
+  .celebrate{position:fixed;inset:0;z-index:996;display:grid;place-items:center;overflow:hidden;cursor:pointer;
+    background:radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--accent) 38%, rgba(8,6,16,.72)), rgba(8,6,16,.9) 72%);
+    backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .3s ease;}
+  .celebrate.show{opacity:1;}
+  .celebrate.leaving{opacity:0;}
+  .cel-rays{position:absolute;left:50%;top:44%;width:220vmax;height:220vmax;margin:-110vmax 0 0 -110vmax;pointer-events:none;
+    background:repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--accent) 45%, transparent) 0deg 6deg, transparent 6deg 18deg);
+    -webkit-mask:radial-gradient(circle, #000 0, transparent 30%);mask:radial-gradient(circle, #000 0, transparent 30%);
+    animation:raysSpin 20s linear infinite;}
+  .cel-core{position:relative;text-align:center;padding:24px;color:#fff;max-width:420px;}
+  .cel-icon{width:124px;height:124px;margin:0 auto 20px;border-radius:36px;display:grid;place-items:center;overflow:hidden;
+    background:var(--grad);color:var(--on-accent);
+    box-shadow:0 0 0 10px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 0 22px color-mix(in srgb, var(--accent) 10%, transparent), 0 0 70px color-mix(in srgb, var(--accent) 85%, transparent);}
+  .cel-icon svg{width:62px;height:62px;}
+  .cel-icon img{width:100%;height:100%;object-fit:cover;}
+  .celebrate.show .cel-icon{animation:celIcon .85s cubic-bezier(.3,1.6,.5,1) both, bob 3s 1s ease-in-out infinite;}
+  @keyframes celIcon{ 0%{transform:scale(0) rotate(-200deg);} 70%{transform:scale(1.15) rotate(12deg);} 100%{transform:none;} }
+  .cel-kicker{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.16em;color:color-mix(in srgb, var(--accent-2) 55%, #fff);}
+  .cel-title{font-family:var(--display);font-size:clamp(30px, 9.5vw, 44px);font-weight:800;letter-spacing:-.035em;line-height:1.08;margin:8px 0 12px;
+    background:linear-gradient(90deg, #fff 0%, color-mix(in srgb, var(--accent-2) 70%, #fff) 30%, #fff 55%, #fff 100%);background-size:250% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 18px color-mix(in srgb, var(--accent) 70%, transparent));}
+  .celebrate.show .cel-kicker{animation:rise .5s .25s cubic-bezier(.2,.85,.25,1) both;}
+  .celebrate.show .cel-title{animation:celTitle .75s .15s cubic-bezier(.3,1.5,.5,1) both, textFlow 4s 1s linear infinite;}
+  @keyframes celTitle{ 0%{opacity:0;scale:.3;letter-spacing:.25em;} 70%{opacity:1;scale:1.08;} 100%{opacity:1;scale:1;} }
+  .cel-sub{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-size:22px;font-weight:700;color:#ffd166;
+    text-shadow:0 0 18px rgba(255,190,60,.6);}
+  .cel-sub .coin-ic--lg{height:28px;}
+  .celebrate.show .cel-sub{animation:rise .5s .4s cubic-bezier(.3,1.6,.5,1) both;}
+  .cel-hint{margin-top:30px;font-size:12px;font-weight:800;color:rgba(255,255,255,.45);}
+  .celebrate.show .cel-hint{animation:rise .5s 1s both;}
+
+  /* =====================================================================
+     ВЕРСИЯ ДЛЯ ПЛАНШЕТА И ПК
+     ===================================================================== */
+  .tab-btn:focus-visible, .btn:focus-visible, .chip:focus-visible{outline:3px solid color-mix(in srgb, var(--accent) 55%, transparent);outline-offset:2px;}
+
+  @media (min-width:600px){
+    .app{max-width:760px;}
+    .subject-grid{grid-template-columns:repeat(3, 1fr);}
+    .shop-grid, .theme-grid{grid-template-columns:repeat(3, 1fr);}
+  }
+
+  @media (min-width:960px){
+    .app{max-width:1240px;padding:22px 32px 22px;}
+    header{padding:2px 4px 22px;}
+    header h1{font-size:22px;}
+    .logo-tile{width:38px;height:38px;border-radius:13px;}
+    .role-btn svg{display:inline-block;}
+    .role-btn{padding:8px 14px;font-size:12.5px;}
+
+    /* каркас: слева меню-сайдбар, справа счётчики и контент */
+    #childView:not(.hidden){display:grid!important;grid-template-columns:236px minmax(0,1fr);grid-template-rows:auto minmax(0,1fr);column-gap:32px;}
+    #childView > .tabs{grid-column:1;grid-row:1 / span 2;align-self:start;flex-direction:column;gap:4px;margin:0;padding:10px;border-radius:28px;}
+    #childView > .stats-bar{grid-column:2;grid-row:1;width:100%;max-width:1000px;margin:0 auto 18px;}
+    #childView > .main{grid-column:2;grid-row:2;padding:4px 6px 32px;}
+    .tab-btn{flex:none;flex-direction:row;justify-content:flex-start;gap:14px;padding:14px 18px;border-radius:20px;}
+    .tab-btn svg{width:22px;height:22px;}
+    .tab-btn span{font-size:14.5px;letter-spacing:0;}
+    .tab-ind{top:0;bottom:auto;left:10px;right:10px;width:auto;transition:transform .55s cubic-bezier(.3,1.35,.45,1), height .35s ease;}
+    .tab-btn.active svg{transform:scale(1.1);}
+    .stat-pill{padding:14px;font-size:20px;}
+
+    /* все экраны — по центру, не шире 1000px */
+    #questTab, #mapTab, #examsTab, #shopTab, #profileTab, #settingsTab{max-width:1000px;margin:0 auto;}
+
+    /* Учёба: карточка уровня и ежедневное задание рядом, предметы в 4 колонки */
+    #stepSetup:not(.hidden){display:grid!important;grid-template-columns:repeat(12, minmax(0,1fr));gap:16px 18px!important;}
+    #stepSetup > *{grid-column:1 / -1;}
+    #stepSetup > .hero{grid-column:span 8;}
+    #stepSetup > #dailyQuestCard{grid-column:span 4;margin:0;display:flex;align-items:center;}
+    #stepSetup > #dailyQuestCard > div{flex:1;flex-wrap:wrap;}
+    #stepSetup > .lock-head{margin-top:14px;}
+    .subject-grid{grid-template-columns:repeat(4, 1fr);gap:14px;}
+    .subject-card{padding:18px;}
+    #stepSetup > .diff-row, #stepSetup > #startWatchBtn, #stepSetup > #selectedTopicWrap{justify-self:center;width:min(560px, 100%);}
+    #stepSetup > .lb-sub{text-align:center;}
+    .card.level-badge{padding:24px;}
+    .level-badge .title{font-size:28px;}
+
+    /* просмотр, квиз, результат — узкая колонка; варианты ответа сеткой 2×2 */
+    #stepWatch:not(.hidden), #stepResult:not(.hidden){max-width:680px;margin:0 auto;}
+    #stepQuiz:not(.hidden){max-width:880px;margin:0 auto;}
+    .q-block{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:20px;}
+    .q-block .qtext{grid-column:1 / -1;font-size:16.5px;margin-bottom:4px;}
+    .q-block .opt{margin:0;}
+    #submitQuizBtn{justify-self:center;width:min(480px,100%);align-self:center;}
+
+    /* Карта: предметы карточками в две колонки */
+    #mapTab:not(.hidden){display:grid;grid-template-columns:1fr 1fr;gap:16px;align-content:start;}
+    #mapTab > .card + .card{margin-top:0;}
+    #mapTab > .section-title, #mapSubjectsList{grid-column:1 / -1;}
+    #mapSubjectsList{display:grid!important;grid-template-columns:1fr 1fr;gap:14px!important;}
+    .map-node{padding:0;}
+    .map-node::before{display:none;}
+
+    /* Магазин: сундук горизонтально, кейсы и темы сеткой */
+    #chestBox{display:grid;grid-template-columns:230px 1fr;column-gap:26px;align-items:center;text-align:left!important;padding:22px 28px;}
+    #chestBox > .chest-stage{grid-row:1 / span 4;margin:0 auto;}
+    #chestBox > div:nth-child(2){font-size:20px;margin:0 0 6px!important;}
+    #chestBox > #openChestBtn{width:auto;justify-self:start;padding:15px 34px;}
+    .case-scroll{display:grid;grid-template-columns:repeat(5, 1fr);overflow:visible;padding:2px 0 6px;}
+    .case-card{flex:none;}
+    .shop-grid{grid-template-columns:repeat(5, 1fr);gap:12px;}
+    #shopTab > .lb-sub{margin-top:-4px!important;}
+
+    /* Профиль: карточки в две колонки */
+    #profileTab:not(.hidden){display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+    #profileTab > .card + .card{margin-top:0;}
+    #profileTab > .level-badge{grid-column:1 / -1;}
+    #profileTab > #petCard{grid-row:span 2;}
+
+    /* Настройки */
+    .theme-grid{grid-template-columns:repeat(5, 1fr);gap:12px;}
+
+    /* Родитель: две колонки карточек */
+    #parentView:not(.hidden){display:grid;grid-template-columns:1fr 1fr;gap:16px;align-content:start;max-width:1000px;width:100%;margin:0 auto;}
+    #parentView > .card + .card{margin-top:0;}
+    #parentView > .section-title, #parentView > #historyListBox, #parentView > #weeklyReportBox{grid-column:1 / -1;}
+
+    /* модалки и празднование на большом экране */
+    .grade-modal-card{max-width:460px;}
+    .cel-icon{width:150px;height:150px;border-radius:44px;}
+    .cel-icon svg{width:76px;height:76px;}
+    .cel-title{font-size:58px;}
+    .toast-host{align-items:flex-end;padding:0 28px;}
+    .toast{max-width:380px;}
+  }
+
+  .pin-input{text-align:center;font-family:var(--display)!important;font-size:28px!important;letter-spacing:.6em;padding:14px 0 14px .6em!important;margin-top:14px;}
+  .pin-badge{font-size:11.5px;font-weight:900;padding:5px 10px;border-radius:999px;background:color-mix(in srgb, var(--danger) 12%, transparent);color:var(--danger);}
+  .pin-badge.on{background:color-mix(in srgb, var(--success) 14%, transparent);color:var(--success);}
+  #pinModal .grade-modal-card.shake{animation:optShake .35s ease;}
+  .ai-explain-btn{border-radius:12px!important;padding:8px 12px!important;font-weight:800!important;font-size:12px!important;
+    border:1.5px solid color-mix(in srgb, var(--accent) 35%, var(--border))!important;background:var(--tint)!important;}
 </style>
 </head>
 <body data-theme="light">
@@ -466,10 +1083,22 @@
   </defs>
 </svg>
 <div id="toastHost" class="toast-host"></div>
+<canvas id="ambientCanvas" aria-hidden="true"></canvas>
 <canvas id="confettiCanvas" aria-hidden="true"></canvas>
+<!-- Празднование на весь экран: квест пройден, новый уровень, редкая находка -->
+<div id="celebrate" class="celebrate hidden" role="status" aria-live="polite">
+  <div class="cel-rays"></div>
+  <div class="cel-core">
+    <div class="cel-icon" id="celIcon"></div>
+    <div class="cel-kicker" id="celKicker"></div>
+    <div class="cel-title" id="celTitle"></div>
+    <div class="cel-sub" id="celSub"></div>
+    <div class="cel-hint">нажми, чтобы продолжить</div>
+  </div>
+</div>
 <div class="app">
   <header>
-    <h1><svg class="ico" style="width:21px;height:21px;vertical-align:-4px;margin-right:3px;"><use href="#icon-sparkles"></use></svg> Спарк</h1>
+    <h1><span class="logo-tile"><svg class="ico"><use href="#icon-sparkles"></use></svg></span>Спарк</h1>
     <div class="role-switch">
       <button class="role-btn active" id="btnRoleChild" data-role="child"><svg class="ico" style="width:12px;height:12px;vertical-align:-1px;"><use href="#icon-student"></use></svg> Ребёнок</button>
       <button class="role-btn" id="btnRoleParent" data-role="parent"><svg class="ico" style="width:12px;height:12px;vertical-align:-1px;"><use href="#icon-person"></use></svg> Родитель</button>
@@ -491,11 +1120,14 @@
 
           <!-- step: map / setup -->
           <div id="stepSetup" style="display:flex;flex-direction:column;gap:10px;">
-            <div class="card level-badge">
+            <div class="card level-badge hero">
               <div class="emoji" id="levelEmoji"><svg class="ico"><use href="#icon-seed"></use></svg></div>
-              <div>
+              <div class="lvl-text">
+                <div class="hero-hello" id="heroHello">Привет!</div>
                 <div class="title" id="levelTitle">Новичок</div>
                 <div class="sub" id="levelSub">Пройдено тем: 0</div>
+                <div class="lvl-bar"><i id="levelFill"></i></div>
+                <div class="lvl-next" id="levelNext"></div>
               </div>
             </div>
 
@@ -548,11 +1180,11 @@
               <div style="font-weight:800;font-size:14px;margin-top:2px;" id="selectedTopicText">—</div>
             </div>
 
-            <label>🎚 Сложность квиза</label>
-            <div style="display:flex;gap:6px;">
-              <div class="chip" id="diffEasy" data-diff="easy" style="flex:1;text-align:center;">🟢 Лёгкий</div>
-              <div class="chip picked" id="diffNormal" data-diff="normal" style="flex:1;text-align:center;">🟡 Обычный</div>
-              <div class="chip" id="diffHard" data-diff="hard" style="flex:1;text-align:center;">🔴 Сложный</div>
+            <label>Сложность квиза</label>
+            <div class="diff-row">
+              <div class="chip" id="diffEasy" data-diff="easy"><span class="diff-dot" style="--dot:#22c55e"></span>Лёгкий</div>
+              <div class="chip picked" id="diffNormal" data-diff="normal"><span class="diff-dot" style="--dot:#f59e0b"></span>Обычный</div>
+              <div class="chip" id="diffHard" data-diff="hard"><span class="diff-dot" style="--dot:#ef4444"></span>Сложный</div>
             </div>
             <div class="lb-sub" style="text-align:center;">Лёгкий — 3 вопроса. Сложный — все вопросы с таймером.</div>
 
@@ -561,6 +1193,7 @@
 
           <!-- step: watching -->
           <div id="stepWatch" class="hidden" style="display:flex;flex-direction:column;gap:10px;">
+            <button class="back-link" id="watchBackBtn" type="button">← Выбрать другую тему</button>
             <div class="lock-head">
               <div class="emoji" id="watchStepEmoji"><svg class="ico"><use href="#icon-play"></use></svg></div>
               <h3 id="watchStepTitle">Смотри внимательно</h3>
@@ -595,6 +1228,7 @@
 
           <!-- step: quiz -->
           <div id="stepQuiz" class="hidden" style="display:flex;flex-direction:column;gap:10px;">
+            <button class="back-link" id="quizBackBtn" type="button">← Выйти из квиза</button>
             <div class="lock-head">
               <div class="emoji"><svg class="ico"><use href="#icon-brain"></use></svg></div>
               <h3>Проверка знаний</h3>
@@ -627,7 +1261,7 @@
       <div id="shopTab" class="hidden">
         <div class="section-title">Сундук удачи</div>
         <div class="card" id="chestBox" style="text-align:center;">
-          <div style="width:76px;height:76px;margin:0 auto 6px;border-radius:18px;overflow:hidden;"><img src="icons/chest-free.png" alt="" style="width:100%;height:100%;object-fit:cover;display:block;"></div>
+          <div class="chest-stage"><img id="chestImg" class="chest-img" src="icons/chest-free.png" alt=""></div>
           <div style="font-weight:800;margin:4px 0;">Открой сундук — случайный бонус!</div>
           <div class="lb-sub" style="margin-bottom:8px;">Осколки или редкий шанс получить тему бесплатно · раз в час</div>
           <button class="btn" id="openChestBtn">Открыть бесплатно</button>
@@ -644,9 +1278,10 @@
       <div id="mapTab" class="hidden">
         <div class="card level-badge">
           <div class="emoji" id="mapLevelEmoji"><svg class="ico"><use href="#icon-seed"></use></svg></div>
-          <div>
+          <div class="lvl-text">
             <div class="title" id="mapLevelTitle">Новичок</div>
             <div class="sub" id="mapLevelSub">Пройдено тем: 0</div>
+            <div class="lvl-bar"><i id="mapLevelFill"></i></div>
           </div>
         </div>
         <div class="card">
@@ -662,9 +1297,10 @@
       <div id="profileTab" class="hidden">
         <div class="card level-badge">
           <div class="emoji" id="profLevelEmoji"><svg class="ico"><use href="#icon-seed"></use></svg></div>
-          <div>
+          <div class="lvl-text">
             <div class="title" id="profLevelTitle">Новичок</div>
             <div class="sub" id="profLevelSub">Пройдено тем: 0</div>
+            <div class="lvl-bar"><i id="profLevelFill"></i></div>
           </div>
         </div>
         <div class="card" id="petCard" style="text-align:center;">
@@ -769,6 +1405,7 @@
     </div>
 
     <div class="tabs">
+      <div class="tab-ind" aria-hidden="true"></div>
       <div class="tab-btn active" data-tab="quest"><svg class="ico"><use href="#icon-bookopen"></use></svg><span>Учёба</span></div>
       <div class="tab-btn" data-tab="map"><svg class="ico"><use href="#icon-map"></use></svg><span>Карта</span></div>
       <div class="tab-btn" data-tab="exams"><svg class="ico"><use href="#icon-medal"></use></svg><span>Экзамены</span></div>
@@ -793,6 +1430,18 @@
       </div>
       <button class="btn" id="linkBtn" style="margin-top:10px;">Привязать</button>
       <div class="lb-sub" id="linkStatus" style="margin-top:8px;text-align:center;"></div>
+    </div>
+
+    <div class="card" id="pinCard">
+      <div class="settings-row" style="border-top:none;padding-top:0;margin-top:0;">
+        <span><svg class="ico stat-ic"><use href="#icon-lock"></use></svg> <b>PIN-код родителя</b></span>
+        <span class="pin-badge" id="pinStatus">Не задан</span>
+      </div>
+      <div class="lb-sub" style="margin-top:8px;" id="pinHint"></div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn" id="pinSetBtn">Задать PIN</button>
+        <button class="btn btn-secondary hidden" id="pinRemoveBtn" style="width:auto;flex-shrink:0;">Убрать</button>
+      </div>
     </div>
 
     <div class="card hidden" id="linkedCard">
@@ -821,14 +1470,14 @@
       <label>Минимальный % правильных ответов в квизе</label>
       <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
         <button class="btn btn-secondary" id="passMinus" style="width:44px;flex-shrink:0;">−</button>
-        <input type="text" id="passInput" value="60" style="text-align:center;font-size:16px;font-weight:700;">
+        <input type="text" id="passInput" value="60" inputmode="numeric" style="text-align:center;font-size:16px;font-weight:700;">
         <button class="btn btn-secondary" id="passPlus" style="width:44px;flex-shrink:0;">+</button>
       </div>
     </div>
 
     <div class="card">
       <label><svg class="ico stat-ic--sm"><use href="#icon-clock"></use></svg> Максимум квестов в день</label>
-      <input type="text" id="limitInput" placeholder="без лимита" style="margin-top:8px;text-align:center;font-size:15px;font-weight:700;">
+      <input type="text" id="limitInput" placeholder="без лимита" inputmode="numeric" style="margin-top:8px;text-align:center;font-size:15px;font-weight:700;">
       <div class="lb-sub" style="margin-top:6px;">Пусто — без ограничений. Помогает следить за балансом экранного времени.</div>
     </div>
 
@@ -876,9 +1525,9 @@
         <div class="lock-head">
           <div class="emoji"><svg class="ico"><use href="#icon-student"></use></svg></div>
           <h3>Как тебя зовут?</h3>
-          <p>Имя увидят в рейтинге и родитель</p>
+          <p>Так тебя будет видеть родитель</p>
         </div>
-        <input type="text" id="authNameInput" placeholder="Например: Саша" style="margin-top:10px;">
+        <input type="text" id="authNameInput" placeholder="Например: Саша" maxlength="24" autocomplete="given-name" style="margin-top:10px;">
         <button class="btn" id="authChildDone" style="margin-top:10px;">Продолжить</button>
         <button class="btn btn-secondary" id="authBack1" style="margin-top:8px;">Назад</button>
       </div>
@@ -950,13 +1599,30 @@
 
   <!-- GRADE SELECT MODAL -->
   <div id="gradeModal" class="grade-modal hidden">
-    <div class="grade-modal-card card">
+    <div class="grade-modal-card card" style="position:relative;">
+      <button class="modal-close-btn hidden" id="gradeModalClose" type="button" aria-label="Закрыть">✕</button>
       <div class="lock-head">
         <div class="emoji"><svg class="ico"><use href="#icon-cap"></use></svg></div>
         <h3>Выбери свой класс</h3>
         <p>Подберём 20 тем по школьной программе именно для тебя</p>
       </div>
       <div class="grade-grid" id="gradeGrid"></div>
+    </div>
+  </div>
+
+  <!-- PIN MODAL: вход в раздел родителя и смена аккаунта, если родитель задал PIN -->
+  <div id="pinModal" class="grade-modal hidden">
+    <div class="grade-modal-card card">
+      <div class="lock-head">
+        <div class="emoji"><svg class="ico"><use href="#icon-lock"></use></svg></div>
+        <h3 id="pinTitle">Введи PIN</h3>
+        <p id="pinSub"></p>
+      </div>
+      <input type="password" id="pinInput" class="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" aria-label="PIN-код">
+      <div class="lb-sub" id="pinError" style="text-align:center;color:var(--danger);min-height:18px;margin-top:6px;"></div>
+      <button class="btn" id="pinOkBtn" style="margin-top:6px;">Готово</button>
+      <button class="btn btn-secondary" id="pinCancelBtn" style="margin-top:12px;">Отмена</button>
+      <button class="back-link hidden" id="pinForgotBtn" type="button" style="display:block;margin:14px auto 0;">Забыли PIN?</button>
     </div>
   </div>
 
@@ -1032,6 +1698,14 @@
   window.addEventListener("resize", resizeConfettiCanvas);
   resizeConfettiCanvas();
 
+  // Фейерверк: несколько залпов конфетти из разных точек экрана подряд.
+  window.fireworks = function(){
+    const w = window.innerWidth, h = window.innerHeight;
+    [[.5,.35,70],[.2,.45,40],[.8,.45,40],[.35,.25,35],[.65,.25,35]].forEach(([fx,fy,n], i)=>{
+      setTimeout(()=> window.fireConfetti({ x:w*fx, y:h*fy, count:n }), i*170);
+    });
+  };
+
   window.fireConfetti = function(opts){
     if(!ctx || REDUCE_MOTION) return;
     opts = opts || {};
@@ -1055,7 +1729,7 @@
         color: colors[Math.floor(Math.random()*colors.length)],
         rot: Math.random()*Math.PI, vrot:(Math.random()-0.5)*0.3,
         life: 0, maxLife: 70 + Math.random()*40,
-        shape: Math.random() < 0.5 ? "rect" : "circle"
+        shape: ["rect","circle","star","ribbon"][Math.floor(Math.random()*4)]
       });
     }
     if(!confettiRAF) confettiRAF = requestAnimationFrame(stepConfetti);
@@ -1073,7 +1747,17 @@
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot);
       ctx.fillStyle = p.color;
-      if(p.shape === "rect"){ ctx.fillRect(-p.size/2, -p.size/3, p.size, p.size*0.66); }
+      if(p.shape === "star"){
+        const r = p.size*0.75;
+        ctx.beginPath();
+        for(let k=0;k<10;k++){
+          const rr = k%2 ? r*0.45 : r, a = k*Math.PI/5 - Math.PI/2;
+          ctx.lineTo(Math.cos(a)*rr, Math.sin(a)*rr);
+        }
+        ctx.closePath(); ctx.fill();
+      }
+      else if(p.shape === "ribbon"){ ctx.fillRect(-p.size*0.18, -p.size, p.size*0.36, p.size*2) ; }
+      else if(p.shape === "rect"){ ctx.fillRect(-p.size/2, -p.size/3, p.size, p.size*0.66); }
       else { ctx.beginPath(); ctx.arc(0,0,p.size/2,0,Math.PI*2); ctx.fill(); }
       ctx.restore();
     });
@@ -1083,6 +1767,83 @@
       ctx.clearRect(0,0,canvas.width,canvas.height);
       confettiRAF = null;
     }
+  }
+
+  // ---- 3D-наклон карточек за курсором (мышь) или пальцем (при нажатии) ----
+  const TILT_SEL = ".subject-card, .card.level-badge, #chestBox, .case-card, .theme-card, .shop-item, .result-box, .auth-card, .grade-btn";
+  function tiltTo(el, e, strength){
+    const r = el.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width, py = (e.clientY - r.top) / r.height;
+    el.style.setProperty("--ry", ((px - .5) * strength).toFixed(2) + "deg");
+    el.style.setProperty("--rx", ((.5 - py) * strength).toFixed(2) + "deg");
+    el.style.setProperty("--gx", (px*100).toFixed(1) + "%");
+    el.style.setProperty("--gy", (py*100).toFixed(1) + "%");
+    el.classList.add("tilting");
+  }
+  function untilt(el){
+    el.style.setProperty("--rx", "0deg"); el.style.setProperty("--ry", "0deg");
+    el.classList.remove("tilting");
+  }
+  let tiltEl = null;
+  document.addEventListener("pointermove", (e) => {
+    if(REDUCE_MOTION || e.pointerType !== "mouse") return;
+    const el = e.target.closest(TILT_SEL);
+    if(tiltEl && tiltEl !== el) untilt(tiltEl);
+    tiltEl = el;
+    if(el) tiltTo(el, e, el.matches(".card.level-badge, #chestBox, .result-box") ? 7 : 12);
+  }, { passive:true });
+  document.addEventListener("pointerdown", (e) => {
+    if(REDUCE_MOTION || e.pointerType === "mouse") return;
+    const el = e.target.closest(TILT_SEL);
+    if(!el) return;
+    tiltTo(el, e, 10);
+    const up = () => { untilt(el); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); };
+    window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
+  }, { passive:true });
+  document.addEventListener("pointerleave", () => { if(tiltEl){ untilt(tiltEl); tiltEl = null; } });
+
+  // ---- Фоновые искры: медленно всплывающие светящиеся точки в цветах темы ----
+  const amb = document.getElementById("ambientCanvas");
+  const actx = amb && !REDUCE_MOTION ? amb.getContext("2d") : null;
+  if(actx){
+    let W = 0, H = 0, dpr = 1, colors = ["#fff","#fff"], lastColorCheck = 0;
+    const sparks = [];
+    const resize = () => {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = amb.width = window.innerWidth * dpr; H = amb.height = window.innerHeight * dpr;
+    };
+    const spawn = (anywhere) => ({
+      x: Math.random() * W, y: anywhere ? Math.random() * H : H + 10 * dpr,
+      r: (0.8 + Math.random() * 2.2) * dpr, vy: (0.15 + Math.random() * 0.45) * dpr,
+      sway: Math.random() * Math.PI * 2, swaySpeed: 0.004 + Math.random() * 0.01,
+      tw: Math.random() * Math.PI * 2, c: Math.random() < .5 ? 0 : 1,
+    });
+    resize(); window.addEventListener("resize", resize);
+    for(let i=0;i<34;i++) sparks.push(spawn(true));
+    const frame = (now) => {
+      if(now - lastColorCheck > 1500){
+        const cs = getComputedStyle(document.body);
+        colors = [cs.getPropertyValue("--accent").trim() || "#fff", cs.getPropertyValue("--accent-2").trim() || "#fff"];
+        lastColorCheck = now;
+      }
+      actx.clearRect(0, 0, W, H);
+      actx.globalCompositeOperation = "lighter";
+      sparks.forEach((s, i) => {
+        s.y -= s.vy; s.sway += s.swaySpeed; s.tw += 0.03;
+        const x = s.x + Math.sin(s.sway) * 18 * dpr;
+        const a = 0.25 + 0.35 * (0.5 + 0.5 * Math.sin(s.tw));
+        actx.globalAlpha = a;
+        actx.fillStyle = colors[s.c];
+        actx.shadowColor = colors[s.c]; actx.shadowBlur = 10 * dpr;
+        actx.beginPath(); actx.arc(x, s.y, s.r, 0, Math.PI * 2); actx.fill();
+        if(s.y < -10 * dpr) sparks[i] = spawn(false);
+      });
+      actx.globalAlpha = 1; actx.shadowBlur = 0; actx.globalCompositeOperation = "source-over";
+      if(!document.hidden) requestAnimationFrame(frame);
+    };
+    requestAnimationFrame(frame);
+    // во вкладке в фоне не тратим батарею — продолжаем, когда вернулись
+    document.addEventListener("visibilitychange", () => { if(!document.hidden) requestAnimationFrame(frame); });
   }
 
   // ---- Короткий "пульс" на плашке (осколки/стрик) при изменении значения ----
@@ -1439,6 +2200,7 @@ function defaultState(){
     questsToday: 0,
     lastChestOpenAt: null,     // время последнего открытия сундука удачи (КД)
     caseCooldowns: {},         // {caseId: время последнего открытия} — КД тематических кейсов
+    parentPinHash: null,       // хэш PIN-кода родителя (null = раздел родителя открыт всем)
   };
 }
 let state = defaultState();
@@ -1520,7 +2282,11 @@ async function loadState(){
   applyTheme(state.currentTheme);
   document.getElementById("passInput").value = state.passPercent;
   document.getElementById("childNameInput").value = state.childName || "";
-  setRole(state.role || "child");
+  // С PIN раздел родителя после перезапуска не открывается сам — сначала спросим PIN.
+  const savedRole = state.role || "child";
+  const pinGate = !!state.parentPinHash && savedRole === "parent";
+  setRole(pinGate ? "child" : savedRole);
+  renderPinCard();
   renderShop();
   renderGradeGrid();
   renderSubjectGrid();
@@ -1545,6 +2311,7 @@ async function loadState(){
   } else {
     syncLinkedChild(true);
   }
+  if(pinGate) document.getElementById("btnRoleParent").click();
 }
 async function saveState(){
   try{ await window.storage.set(STORAGE_KEY, JSON.stringify(state), false); }
@@ -1702,8 +2469,27 @@ function buildChildPayload(){
     achievements: (state.claimedAchievements || []).length,
     lastCompletionDate: state.lastCompletionDate,
     lb: state.lbOptIn !== false,
+    // Последние прохождения — чтобы «Отчёт за неделю» и «История» у родителя
+    // показывали данные ребёнка, а не пустой журнал родительского устройства.
+    history: (state.history || []).slice(-25).map(h => ({
+      d: h.date, s: h.subject, t: h.topic, c: h.correct, n: h.total, p: h.pass ? 1 : 0, m: h.mode === "review" ? "r" : "q",
+    })),
     updatedAt: new Date().toISOString(),
   };
+}
+// Журнал для родительских отчётов: у привязанного родителя — из снимка ребёнка.
+function reportHistory(){
+  if(state.accountType === "parent" && state.linkedCode){
+    const snap = state.linkedSnapshot || {};
+    return (snap.history || []).map(h => ({
+      date: h.d, subject: h.s, topic: h.t, correct: h.c, total: h.n, pass: !!h.p, mode: h.m === "r" ? "review" : "quest",
+    }));
+  }
+  return Array.isArray(state.history) ? state.history : [];
+}
+function reportStreak(){
+  if(state.accountType === "parent" && state.linkedCode) return (state.linkedSnapshot || {}).streak || 0;
+  return state.streak;
 }
 
 // Кодируем снимок в переносимый текстовый код (работает офлайн, без сервера).
@@ -1811,8 +2597,8 @@ function renderParentView(){
   document.getElementById("pChildName").textContent = snap.name || state.childName || "Ребёнок";
   document.getElementById("pChildCode").textContent = state.linkedCode;
   document.getElementById("pSyncedAt").textContent = fmtSynced(snap.updatedAt);
-  document.getElementById("pStreak").textContent = (snap.streak ?? 0) + " дней";
-  document.getElementById("pBestStreak").textContent = (snap.longestStreak ?? 0) + " дней";
+  document.getElementById("pStreak").textContent = daysText(snap.streak ?? 0);
+  document.getElementById("pBestStreak").textContent = daysText(snap.longestStreak ?? 0);
   document.getElementById("pCoins").textContent = snap.coins ?? 0;
   document.getElementById("pDone").textContent = snap.totalCompleted ?? 0;
   document.getElementById("pLastDate").textContent = snap.lastCompletionDate || "—";
@@ -1823,10 +2609,10 @@ function renderParentView(){
 function renderWeeklyReport(){
   const box = document.getElementById("weeklyReportBox");
   if(!box) return;
-  const history = Array.isArray(state.history) ? state.history : [];
+  const history = reportHistory();
   const cutoff = addDays(todayStr(), -6);
   const week = history.filter(h => h.date >= cutoff);
-  const questWeek = week.filter(h => h.mode !== "review");
+  const questWeek = week.filter(h => h.mode !== "review" && h.total > 0);
   const topicsDone = new Set(questWeek.filter(h=>h.pass).map(h=>h.topic)).size;
   const avgPct = questWeek.length
     ? Math.round(questWeek.reduce((s,h)=> s + (h.correct/h.total*100), 0) / questWeek.length)
@@ -1841,7 +2627,7 @@ function renderWeeklyReport(){
       📚 Тем пройдено за неделю: <b>${topicsDone}</b><br>
       🎯 Средний результат в квизах: <b>${avgPct !== null ? avgPct + "%" : "—"}</b><br>
       📅 Активных дней: <b>${activeDays}</b> из 7<br>
-      🔥 Текущий стрик: <b>${state.streak}</b> дн.
+      🔥 Текущий стрик: <b>${reportStreak()}</b> дн.
     </div>`;
 }
 
@@ -1849,7 +2635,7 @@ function renderWeeklyReport(){
 function renderHistoryList(){
   const box = document.getElementById("historyListBox");
   if(!box) return;
-  const history = Array.isArray(state.history) ? state.history.slice(-30).reverse() : [];
+  const history = reportHistory().slice(-30).reverse();
   if(!history.length){
     box.innerHTML = `<div class="hint-muted">Пока нет записей о прохождениях.</div>`;
     return;
@@ -1891,6 +2677,16 @@ function applyTheme(id){
   applyEffectiveTheme();
   renderShop();
 }
+// Выбор темы руками. При включённой «Авто-тёмной теме» выбранная тема раньше
+// просто не появлялась (авто-режим перебивал её) — теперь авто-режим выключается.
+function chooseTheme(id){
+  if(state.autoTheme){
+    state.autoTheme = false;
+    renderAutoThemeToggle();
+    showToast("Авто-тёмная тема выключена — теперь действует выбранная тема", "success");
+  }
+  applyTheme(id);
+}
 // ---- Авто-тёмная тема по системным настройкам устройства ----
 function systemPrefersDark(){
   return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -1916,6 +2712,16 @@ document.getElementById("autoThemeToggle") && (document.getElementById("autoThem
   saveState();
 });
 
+// Склонение по числу: plural(2, "тема", "темы", "тем") → "темы"
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  if(a > 10 && a < 20) return many;
+  if(b === 1) return one;
+  if(b >= 2 && b <= 4) return few;
+  return many;
+}
+function daysText(n){ return n + " " + plural(n, "день", "дня", "дней"); }
+
 function fmt(sec){
   sec = Math.max(0, Math.round(sec));
   const m = Math.floor(sec/60), s = sec%60;
@@ -1936,6 +2742,19 @@ function getLevel(total){
   for(const l of LEVELS){ if(total >= l.min) cur = l; }
   return cur;
 }
+// Шкала опыта до следующего уровня: {pct, left, next}
+function levelProgress(total){
+  const i = LEVELS.indexOf(getLevel(total));
+  const cur = LEVELS[i], next = LEVELS[i+1];
+  if(!next) return { pct:100, left:0, next:null };
+  return { pct: Math.round((total - cur.min) / (next.min - cur.min) * 100), left: next.min - total, next };
+}
+function setLevelFill(id, total){
+  const el = document.getElementById(id);
+  if(el) el.style.width = levelProgress(total).pct + "%";
+}
+// Цвет у каждого предмета — карточки и карта перестают быть одинаковыми.
+const SUBJECT_COLOR = {math:"#3b82f6",rus:"#ef4444",lit:"#f59e0b",hist:"#b45309",bio:"#22c55e",geo:"#14b8a6",eng:"#6366f1",soc:"#a855f7",phys:"#06b6d4",info:"#64748b",chem:"#ec4899"};
 
 // ---- ПИТОМЕЦ-РАСТЕНИЕ: растёт по мере прохождения тем ----
 // У первых двух стадий — свои рисунки (icons/pet-*.png), дальше — те же
@@ -1970,33 +2789,108 @@ function renderPet(){
     const span = next.min - cur.min;
     const pct = Math.min(100, Math.round((total - cur.min) / span * 100));
     fill.style.width = pct + "%";
-    sub.textContent = `Ещё ${next.min - total} ${next.min - total === 1 ? "тема" : "тем"} до стадии «${next.title}»`;
+    sub.textContent = `Ещё ${next.min - total} ${plural(next.min - total, "тема", "темы", "тем")} до стадии «${next.title}»`;
   } else {
     fill.style.width = "100%";
     sub.textContent = "Питомец вырос полностью — ты молодец! 🎉";
   }
 }
+// ---- Празднование на весь экран ----
+// Очередь: если поводов несколько (квест + новый уровень), показываем по одному.
+const celebrateQueue = [];
+let celebrateBusy = false;
+function celebrate(opts){
+  celebrateQueue.push(opts);
+  if(!celebrateBusy) nextCelebration();
+}
+function nextCelebration(){
+  const opts = celebrateQueue.shift();
+  const el = document.getElementById("celebrate");
+  if(!opts){ celebrateBusy = false; return; }
+  celebrateBusy = true;
+  document.getElementById("celIcon").innerHTML = opts.img ? `<img src="${opts.img}" alt="">` : icon(opts.icon || "trophy");
+  document.getElementById("celKicker").textContent = opts.kicker || "";
+  document.getElementById("celTitle").textContent = opts.title || "";
+  document.getElementById("celSub").innerHTML = opts.sub || "";
+  el.classList.remove("hidden", "leaving");
+  void el.offsetWidth;
+  el.classList.add("show");
+  if(window.fireworks) window.fireworks();
+  vibrate([20,40,20,40,30]);
+  let done = false;
+  const close = () => {
+    if(done) return; done = true;
+    clearTimeout(timer);
+    el.classList.add("leaving");
+    setTimeout(()=>{ el.classList.add("hidden"); el.classList.remove("show","leaving"); nextCelebration(); }, 320);
+  };
+  const timer = setTimeout(close, opts.duration || 2600);
+  el.onclick = close;
+}
+
+// Счётчик в шапке «докручивается» до нового значения, а при росте над плашкой
+// всплывает «+N» — награда ощущается, а не просто меняется цифра.
+const countTweens = {};
+function setCount(id, to){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const from = parseInt(el.dataset.v ?? el.textContent, 10) || 0;
+  el.dataset.v = to;
+  cancelAnimationFrame(countTweens[id]);
+  if(from === to || el.dataset.ready !== "1" || window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+    el.textContent = to; el.dataset.ready = "1"; return;
+  }
+  if(to > from) floatGain(el.closest(".stat-pill"), "+" + (to - from));
+  const t0 = performance.now(), dur = Math.min(900, 300 + Math.abs(to - from) * 12);
+  const step = now => {
+    const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = Math.round(from + (to - from) * e);
+    if(k < 1) countTweens[id] = requestAnimationFrame(step);
+  };
+  countTweens[id] = requestAnimationFrame(step);
+}
+function floatGain(anchor, text){
+  if(!anchor) return;
+  const r = anchor.getBoundingClientRect();
+  const f = document.createElement("div");
+  f.className = "float-gain";
+  f.textContent = text;
+  f.style.left = (r.left + r.width/2) + "px";
+  f.style.top = (r.top + r.height/2) + "px";
+  document.body.appendChild(f);
+  f.addEventListener("animationend", () => f.remove());
+}
+
 function refreshAllStats(){
-  document.getElementById("streakCount").textContent = state.streak;
-  document.getElementById("coinCount").textContent = state.coins;
+  setCount("streakCount", state.streak);
+  setCount("coinCount", state.coins);
 
   const lvl = getLevel(state.totalCompleted);
   document.getElementById("levelEmoji").innerHTML = icon(lvl.icon);
   document.getElementById("levelTitle").textContent = lvl.title;
   document.getElementById("levelSub").textContent = `Пройдено тем: ${state.totalCompleted}`;
+  const lp = levelProgress(state.totalCompleted);
+  setLevelFill("levelFill", state.totalCompleted);
+  setLevelFill("profLevelFill", state.totalCompleted);
+  document.getElementById("levelNext").textContent = lp.next
+    ? `Ещё ${lp.left} ${plural(lp.left, "тема", "темы", "тем")} до уровня «${lp.next.title}»`
+    : "Максимальный уровень — ты легенда!";
+  const hour = new Date().getHours();
+  const hi = hour < 5 ? "Доброй ночи" : hour < 12 ? "Доброе утро" : hour < 18 ? "Добрый день" : "Добрый вечер";
+  document.getElementById("heroHello").textContent = state.childName ? `${hi}, ${state.childName}!` : `${hi}!`;
   document.getElementById("profLevelEmoji").innerHTML = icon(lvl.icon);
   document.getElementById("profLevelTitle").textContent = lvl.title;
   document.getElementById("profLevelSub").textContent = `Пройдено тем: ${state.totalCompleted}`;
 
-  document.getElementById("profStreak").textContent = state.streak + " дней";
-  document.getElementById("profBestStreak").textContent = state.longestStreak + " дней";
+  document.getElementById("profStreak").textContent = daysText(state.streak);
+  document.getElementById("profBestStreak").textContent = daysText(state.longestStreak);
   document.getElementById("profCoins").textContent = state.coins;
   document.getElementById("profDone").textContent = state.totalCompleted;
   document.getElementById("profAch").textContent = (state.claimedAchievements || []).length;
 
   if(!(state.accountType === "parent" && state.linkedCode)){
-  document.getElementById("pStreak").textContent = state.streak + " дней";
-  document.getElementById("pBestStreak").textContent = state.longestStreak + " дней";
+  document.getElementById("pStreak").textContent = daysText(state.streak);
+  document.getElementById("pBestStreak").textContent = daysText(state.longestStreak);
   document.getElementById("pCoins").textContent = state.coins;
   document.getElementById("pDone").textContent = state.totalCompleted;
   document.getElementById("pLastDate").textContent = state.lastCompletionDate || "—";
@@ -2089,7 +2983,7 @@ function renderReviewCard(){
   }
   card.classList.remove("hidden");
   const n = Math.min(due.length, 3);
-  document.getElementById("reviewCardText").textContent = `Разомнись — ${n} ${n===1?"вопрос":"вопроса"} по уже пройденным темам`;
+  document.getElementById("reviewCardText").textContent = `Разомнись — ${n} ${plural(n, "вопрос", "вопроса", "вопросов")} по уже пройденным темам`;
 }
 
 document.getElementById("startReviewBtn").onclick = () => startReviewQuiz();
@@ -2118,8 +3012,7 @@ function startReviewQuiz(){
   quizData = { questions: questions };
   selectedAnswers = {};
   showStep("stepQuiz");
-  document.querySelector("#stepQuiz .lock-head h3").textContent = "♻️ Разминка-повторение";
-  document.querySelector("#stepQuiz .lock-head p").textContent = "Вспомним то, что уже проходили";
+  setQuizHeading("Разминка-повторение", "Вспомним то, что уже проходили");
   renderQuiz();
 }
 
@@ -2130,9 +3023,138 @@ function setRole(role){
   document.getElementById("btnRoleParent").classList.toggle("active", role==="parent");
   document.getElementById("childView").classList.toggle("hidden", role!=="child");
   document.getElementById("parentView").classList.toggle("hidden", role!=="parent");
+  // пока меню было скрыто, у вкладок не было размеров — ставим ползунок заново
+  if(role === "child") requestAnimationFrame(placeTabIndicator);
 }
-document.getElementById("btnRoleChild").onclick = () => { setRole("child"); saveState(); };
-document.getElementById("btnRoleParent").onclick = () => {
+// ---- PIN-код родителя ----
+// Без PIN ребёнок мог открыть «Родитель» на своём телефоне и снять лимит
+// квестов, понизить проходной % или сбросить прогресс. Если PIN задан,
+// его спрашивают при входе в раздел родителя и при смене аккаунта.
+// Это защита «от ребёнка», а не криптография: храним только хэш, сам PIN — нет.
+function pinHash(pin){
+  let h = 2166136261;
+  const s = "spark-pin:" + pin;
+  for(let i=0;i<s.length;i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+let parentUnlocked = false; // раздел открыт до возврата во вкладку «Ребёнок» или перезапуска
+let pinResolve = null, pinValidate = null;
+
+// Показывает окно ввода PIN. Возвращает введённые 4 цифры, null (отмена) или "forgot".
+// validate(pin) → текст ошибки или null; при ошибке окно не закрывается.
+function askPin(title, sub, opts){
+  opts = opts || {};
+  return new Promise(resolve=>{
+    pinResolve = resolve;
+    pinValidate = opts.validate || null;
+    document.getElementById("pinTitle").textContent = title;
+    document.getElementById("pinSub").textContent = sub || "";
+    document.getElementById("pinError").textContent = "";
+    document.getElementById("pinForgotBtn").classList.toggle("hidden", !opts.forgot);
+    const input = document.getElementById("pinInput");
+    input.value = "";
+    document.getElementById("pinModal").classList.remove("hidden");
+    setTimeout(()=> input.focus(), 60);
+  });
+}
+function closePinModal(result){
+  document.getElementById("pinModal").classList.add("hidden");
+  const r = pinResolve;
+  pinResolve = null; pinValidate = null;
+  if(r) r(result);
+}
+function pinError(msg){
+  document.getElementById("pinError").textContent = msg;
+  const card = document.querySelector("#pinModal .grade-modal-card");
+  card.classList.remove("shake"); void card.offsetWidth; card.classList.add("shake");
+  document.getElementById("pinInput").value = "";
+  document.getElementById("pinInput").focus();
+  vibrate(120);
+}
+document.getElementById("pinInput").addEventListener("input", e=>{
+  e.target.value = e.target.value.replace(/\D/g, "").slice(0, 4);
+  document.getElementById("pinError").textContent = "";
+  if(e.target.value.length === 4) document.getElementById("pinOkBtn").click();
+});
+document.getElementById("pinInput").addEventListener("keydown", e=>{
+  if(e.key === "Enter") document.getElementById("pinOkBtn").click();
+});
+document.getElementById("pinOkBtn").onclick = () => {
+  const v = document.getElementById("pinInput").value;
+  if(!/^\d{4}$/.test(v)){ pinError("PIN — это 4 цифры"); return; }
+  const err = pinValidate ? pinValidate(v) : null;
+  if(err){ pinError(err); return; }
+  closePinModal(v);
+};
+document.getElementById("pinCancelBtn").onclick = () => closePinModal(null);
+document.getElementById("pinForgotBtn").onclick = () => closePinModal("forgot");
+
+// Пропускает дальше, только если PIN не задан или введён верно.
+async function requireParentPin(reason){
+  if(!state.parentPinHash || parentUnlocked) return true;
+  const v = await askPin("Введи PIN родителя", reason, {
+    forgot: true,
+    validate: pin => pinHash(pin) === state.parentPinHash ? null : "Неверный PIN",
+  });
+  if(v === "forgot"){ forgotParentPin(); return false; }
+  if(!v) return false;
+  parentUnlocked = true;
+  return true;
+}
+// Забытый PIN нельзя «подсмотреть» — сбросить его можно только вместе со всем
+// профилем на этом устройстве, иначе ребёнок просто сбрасывал бы PIN сам.
+async function forgotParentPin(){
+  const ok = confirm(
+    "Забыли PIN?\n\n" +
+    "Сбросить PIN можно только вместе со всем профилем на ЭТОМ устройстве: " +
+    "имя, класс, прогресс, осколки и темы будут удалены, и приложение начнётся заново.\n\nПродолжить?"
+  );
+  if(!ok) return;
+  try{ await window.storage.set(STORAGE_KEY, JSON.stringify(defaultState()), false); }
+  catch(e){ console.error(e); }
+  window.location.reload();
+}
+
+function renderPinCard(){
+  const has = !!state.parentPinHash;
+  const status = document.getElementById("pinStatus");
+  status.textContent = has ? "Включён" : "Не задан";
+  status.classList.toggle("on", has);
+  document.getElementById("pinHint").textContent = has
+    ? "Раздел родителя и смена аккаунта открываются только по PIN. Без него ребёнок не сможет снять лимиты или сбросить прогресс."
+    : "Сейчас ребёнок может открыть этот раздел и снять лимиты. Задай 4 цифры — их будут спрашивать при входе сюда и при смене аккаунта.";
+  document.getElementById("pinSetBtn").textContent = has ? "Сменить PIN" : "Задать PIN";
+  document.getElementById("pinRemoveBtn").classList.toggle("hidden", !has);
+}
+document.getElementById("pinSetBtn").onclick = async () => {
+  const first = await askPin(state.parentPinHash ? "Новый PIN" : "Придумай PIN", "4 цифры, которые знает только родитель");
+  if(!first) return;
+  const second = await askPin("Повтори PIN", "Чтобы точно не ошибиться", {
+    validate: pin => pin === first ? null : "PIN не совпадает — попробуй ещё раз",
+  });
+  if(!second) return;
+  state.parentPinHash = pinHash(first);
+  parentUnlocked = true;
+  renderPinCard();
+  saveState();
+  showToast("🔒 PIN задан — раздел родителя защищён", "success");
+};
+document.getElementById("pinRemoveBtn").onclick = () => {
+  if(!confirm("Убрать PIN? Раздел родителя снова сможет открыть любой, включая ребёнка.")) return;
+  state.parentPinHash = null;
+  renderPinCard();
+  saveState();
+  showToast("PIN убран", "warn");
+};
+
+document.getElementById("btnRoleChild").onclick = () => {
+  setRole("child");
+  parentUnlocked = false; // уходя к ребёнку, раздел родителя снова запирается
+  saveState();
+};
+document.getElementById("btnRoleParent").onclick = async () => {
+  if(state.role === "parent") return;
+  if(!(await requireParentPin("Чтобы открыть раздел родителя"))) return;
   setRole("parent");
   if(state.accountType !== "parent" && !state.linkedCode) state.accountType = state.accountType || "parent";
   renderParentView();
@@ -2146,6 +3168,8 @@ document.getElementById("btnRoleParent").onclick = () => {
 // поэтому «сменить аккаунт» = полностью сбросить текущий профиль/привязку на
 // ЭТОМ устройстве и заново пройти выбор роли — как при первой установке.
 document.getElementById("switchAccountBtn").onclick = async () => {
+  // иначе «Сменить аккаунт» обнулял бы и PIN вместе с лимитами
+  if(!(await requireParentPin("Чтобы сменить аккаунт на этом устройстве"))) return;
   const ok = confirm(
     "Сменить аккаунт на этом устройстве?\n\n" +
     "Профиль (имя, класс, код, весь прогресс и привязка) на ЭТОМ устройстве будет удалён, " +
@@ -2191,8 +3215,15 @@ document.getElementById("resetProgressBtn").onclick = () => {
 // ---- GRADE (CLASS) SELECT ----
 function openGradeModal(){
   renderGradeGrid();
+  // Закрыть без выбора можно, только если класс уже выбран раньше —
+  // иначе из окна «Сменить класс» нельзя было выйти, не меняя класс.
+  document.getElementById("gradeModalClose").classList.toggle("hidden", !state.grade);
   document.getElementById("gradeModal").classList.remove("hidden");
 }
+document.getElementById("gradeModalClose").onclick = () => closeGradeModal();
+document.getElementById("gradeModal").addEventListener("click", (e) => {
+  if(e.target.id === "gradeModal" && state.grade) closeGradeModal();
+});
 function closeGradeModal(){
   document.getElementById("gradeModal").classList.add("hidden");
 }
@@ -2223,17 +3254,63 @@ document.getElementById("changeGradeLink").onclick = (e) => { e.preventDefault()
 document.getElementById("pChangeGradeBtn").onclick = () => openGradeModal();
 
 // ---- TABS (child view) ----
+// Ползунок нижнего меню: один градиентный «пилюля»-фон переезжает под активную вкладку.
+function placeTabIndicator(){
+  const ind = document.querySelector(".tab-ind");
+  const act = document.querySelector(".tab-btn.active");
+  if(!ind || !act || !act.offsetWidth) return;
+  // на ПК меню стоит слева вертикально — ползунок ездит вверх-вниз
+  if(getComputedStyle(act.parentElement).flexDirection === "column"){
+    ind.style.width = "";
+    ind.style.height = act.offsetHeight + "px";
+    ind.style.transform = `translateY(${act.offsetTop}px)`;
+  } else {
+    ind.style.height = "";
+    ind.style.width = act.offsetWidth + "px";
+    ind.style.transform = `translateX(${act.offsetLeft}px)`;
+  }
+}
+// Вкладки — div'ы, поэтому делаем их доступными с клавиатуры (Tab + Enter/Пробел)
+document.querySelectorAll(".tab-btn").forEach(b=>{
+  b.tabIndex = 0;
+  b.setAttribute("role", "button");
+  b.addEventListener("keydown", e=>{
+    if(e.key === "Enter" || e.key === " "){ e.preventDefault(); b.click(); }
+  });
+});
+// Размеры вкладок меняются после загрузки шрифтов и при показе меню —
+// ResizeObserver переставляет ползунок в каждом таком случае.
+if(window.ResizeObserver){
+  const tabsRO = new ResizeObserver(() => placeTabIndicator());
+  document.querySelectorAll(".tabs, .tab-btn").forEach(el => tabsRO.observe(el));
+} else {
+  window.addEventListener("resize", placeTabIndicator);
+}
+requestAnimationFrame(placeTabIndicator);
+if(document.fonts && document.fonts.ready) document.fonts.ready.then(placeTabIndicator);
+const TAB_ORDER = ["quest","map","exams","shop","profile","settings"];
+const TAB_IDS = {quest:"questTab", map:"mapTab", exams:"examsTab", shop:"shopTab", profile:"profileTab", settings:"settingsTab"};
 document.querySelectorAll(".tab-btn").forEach(btn=>{
   btn.onclick = () => {
+    const prev = document.querySelector(".tab-btn.active");
+    const prevIdx = prev ? TAB_ORDER.indexOf(prev.dataset.tab) : 0;
     document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
+    placeTabIndicator();
     const tab = btn.dataset.tab;
+    // экран въезжает с той стороны, где стоит вкладка в меню
+    const pane = document.getElementById(TAB_IDS[tab]);
+    if(pane && prev !== btn){
+      pane.classList.remove("slide-l","slide-r"); void pane.offsetWidth;
+      pane.classList.add(TAB_ORDER.indexOf(tab) > prevIdx ? "slide-r" : "slide-l");
+    }
     document.getElementById("questTab").classList.toggle("hidden", tab!=="quest");
     document.getElementById("mapTab").classList.toggle("hidden", tab!=="map");
     document.getElementById("examsTab").classList.toggle("hidden", tab!=="exams");
     document.getElementById("shopTab").classList.toggle("hidden", tab!=="shop");
     document.getElementById("profileTab").classList.toggle("hidden", tab!=="profile");
     document.getElementById("settingsTab").classList.toggle("hidden", tab!=="settings");
+    scrollMainTop();
     if(tab==="profile") refreshAllStats();
     if(tab==="map") renderMap();
     if(tab==="exams"){ examsStep = "types"; renderExams(); }
@@ -2251,6 +3328,13 @@ function showStep(id){
   ["stepSetup","stepWatch","stepQuiz","stepResult"].forEach(s=>{
     document.getElementById(s).classList.toggle("hidden", s!==id);
   });
+  scrollMainTop();
+}
+// Новый шаг/вкладка раньше открывались с той же прокрутки, что и предыдущие —
+// например, результат квиза показывался «с середины».
+function scrollMainTop(){
+  const m = document.querySelector("#childView .main");
+  if(m) m.scrollTop = 0;
 }
 
 function renderSubjectGrid(){
@@ -2271,9 +3355,12 @@ function renderSubjectGrid(){
     const doneCount = subj.topics.filter(t => state.completedTopics.includes("g"+state.grade+"::"+subj.id+"::"+t.title)).length;
     const card = document.createElement("div");
     card.className = "subject-card" + (selectedSubject && selectedSubject.id===subj.id ? " picked" : "");
+    card.style.setProperty("--sc", SUBJECT_COLOR[subj.id] || "var(--accent)");
+    const spct = subj.topics.length ? Math.round(doneCount/subj.topics.length*100) : 0;
     card.innerHTML = `<div class="semoji">${icon(SUBJECT_ICON[subj.id]||"bookopen")}</div>
       <div class="sname">${subj.name}</div>
-      <div class="sprog">${doneCount}/${subj.topics.length} пройдено</div>`;
+      <div class="sprog">${doneCount}/${subj.topics.length} пройдено</div>
+      <div class="sbar"><i style="width:${spct}%"></i></div>`;
     card.onclick = () => {
       selectedSubject = subj;
       selectedLesson = null;
@@ -2600,12 +3687,21 @@ function showQuizError(topic, subject, grade, message){
   document.getElementById("backToSetupBtn").onclick = () => resetFlow();
 }
 
+// Заголовок шага квиза: после разминки он должен вернуться к обычному,
+// даже если разминку бросили на середине.
+function setQuizHeading(title, sub){
+  document.querySelector("#stepQuiz .lock-head h3").textContent = title;
+  document.querySelector("#stepQuiz .lock-head p").textContent = sub;
+}
+
 function generateQuiz(topic, subject, grade){
   document.getElementById("quizLoading").classList.add("hidden");
   document.getElementById("quizQuestions").innerHTML = "";
   document.getElementById("submitQuizBtn").classList.add("hidden");
+  document.getElementById("submitQuizBtn").disabled = false;
   selectedAnswers = {};
   reviewModeActive = false;
+  setQuizHeading("Проверка знаний", topic ? "Тема: " + topic : "Реши задания по теме");
   const subjId = selectedSubject ? selectedSubject.id : null;
   const gr = grade || state.grade || 5;
   let list = subjId ? getLocalQuestions(topic, subjId, gr) : null;
@@ -2623,20 +3719,26 @@ function generateQuiz(topic, subject, grade){
 
 let hardModeTimerHandle = null;
 let hardModeTimeUp = false;
+let quizLocked = false; // после «Проверить ответы» варианты больше не переключаются
 function renderQuiz(){
   const box = document.getElementById("quizQuestions");
   box.innerHTML = "";
+  box.classList.remove("locked");
   hardModeTimeUp = false;
+  quizLocked = false;
+  document.getElementById("submitQuizBtn").disabled = false;
   if(hardModeTimerHandle){ clearInterval(hardModeTimerHandle); hardModeTimerHandle = null; }
   quizData.questions.forEach((q, qi)=>{
     const div = document.createElement("div");
     div.className = "q-block";
+    div.style.setProperty("--i", qi); // задержка появления — вопросы выезжают по очереди
     div.innerHTML = `<div class="qtext">${qi+1}. ${escapeHtml(q.question)}</div>`;
     q.options.forEach((opt, oi)=>{
       const optDiv = document.createElement("div");
       optDiv.className = "opt";
       optDiv.textContent = opt;
       optDiv.onclick = () => {
+        if(quizLocked) return;
         selectedAnswers[qi] = oi;
         div.querySelectorAll(".opt").forEach(o=>o.classList.remove("selected"));
         optDiv.classList.add("selected");
@@ -2681,10 +3783,16 @@ document.getElementById("submitQuizBtn").onclick = () => {
   if(hardModeTimerHandle){ clearInterval(hardModeTimerHandle); hardModeTimerHandle = null; }
   if(!quizData || !quizData.questions || !quizData.questions.length) return;
   const total = quizData.questions.length;
+  if(quizLocked) return;
   if(Object.keys(selectedAnswers).length < total && !hardModeTimeUp){
-    alert("Ответь на все вопросы");
+    const left = total - Object.keys(selectedAnswers).length;
+    showToast(`Осталось ответить ещё на ${left} ${plural(left, "вопрос", "вопроса", "вопросов")}`, "warn");
+    const firstEmpty = Array.from(document.querySelectorAll(".q-block")).find((b, i) => selectedAnswers[i] === undefined);
+    if(firstEmpty) firstEmpty.scrollIntoView({ behavior: "smooth", block: "center" });
     return;
   }
+  quizLocked = true;
+  document.getElementById("quizQuestions").classList.add("locked");
   let correct = 0;
   lastWrongAnswers = [];
   quizData.questions.forEach((q, qi)=>{
@@ -2766,7 +3874,9 @@ async function requestAiExplanation(idx, btn){
   const out = document.getElementById("aiExplainOut" + idx);
   if(!out) return;
   const cacheKey = idx + "::" + w.question + "::" + w.yourAnswer;
-  if(aiExplainCache[cacheKey]){
+  // «Спросить ещё раз» должно реально спрашивать заново, а не показывать тот же ответ из кэша.
+  const askAgain = btn.dataset.asked === "1";
+  if(aiExplainCache[cacheKey] && !askAgain){
     out.innerHTML = formatAiExplanation(aiExplainCache[cacheKey]);
     return;
   }
@@ -2795,6 +3905,7 @@ async function requestAiExplanation(idx, btn){
     aiExplainCache[cacheKey] = data.explanation;
     out.innerHTML = formatAiExplanation(data.explanation);
     btn.textContent = "🔄 Спросить ещё раз";
+    btn.dataset.asked = "1";
     btn.disabled = false;
   } catch(err){
     out.innerHTML = `<div style="font-size:11.5px;color:var(--danger);margin-top:2px;">Не получилось получить объяснение от ИИ. Проверь интернет-соединение и попробуй ещё раз.</div>`;
@@ -2885,6 +3996,8 @@ function finishQuiz(pass, correct, total){
         state.perfectStreak = 0;
       }
     }
+    const prevLevel = getLevel(state.totalCompleted);
+    const prevPet = getPetStage(state.totalCompleted);
     if(state.grade && selectedSubject) markTopicComplete(selectedSubject.id, topic);
     checkGlobalAchievements();
     renderSubjectGrid();
@@ -2892,8 +4005,21 @@ function finishQuiz(pass, correct, total){
     refreshAllStats();
     saveState();
     playSound("success");
-    vibrate([20,40,20]);
-    if(window.fireConfetti) window.fireConfetti();
+    celebrate({
+      icon: correct === total ? "crown" : "trophy",
+      kicker: correct === total ? "Идеально — без ошибок" : `${correct} из ${total} верно`,
+      title: "Квест пройден!",
+      sub: reward ? `+${reward + (dailyClaimed ? DAILY_QUEST_REWARD : 0)} ${coinIcon("coin-ic--lg")}` : "",
+    });
+    const newLevel = getLevel(state.totalCompleted);
+    if(newLevel !== prevLevel){
+      celebrate({ icon: newLevel.icon, kicker: "Новый уровень", title: newLevel.title, sub: "Так держать — ты растёшь!" });
+    }
+    const newPet = getPetStage(state.totalCompleted);
+    if(newPet !== prevPet){
+      const st = PET_STAGES[newPet];
+      celebrate({ icon: st.icon, img: st.img, kicker: "Питомец подрос", title: st.title, sub: "Загляни в «Профиль»" });
+    }
     emoji.classList.remove("tone-bad");
     emoji.innerHTML = icon("confetti");
     title.textContent = "Квест пройден!";
@@ -2917,10 +4043,14 @@ function finishQuiz(pass, correct, total){
     emoji.innerHTML = icon("target");
     title.textContent = "Не совсем";
     text.textContent = `Правильных ответов: ${correct} из ${total}. Нужно минимум ${state.passPercent||60}%. Попробуй ещё раз.`;
-    btn.textContent = "Пройти проверку заново";
+    // Повтор сразу открывает новый квиз по той же теме (варианты перемешаются),
+    // а не выкидывает на выбор темы, как было раньше.
+    btn.textContent = "Попробовать ещё раз";
     btn.onclick = () => {
-      resetFlow();
-      showStep("stepSetup");
+      if(!checkDailyLimitOk()) return;
+      showStep("stepQuiz");
+      const subj = (selectedLesson && selectedLesson.subject) || (selectedSubject && selectedSubject.name) || "";
+      generateQuiz(topic, subj, state.grade);
     };
     state.perfectStreak = 0;
   }
@@ -2959,8 +4089,6 @@ function finishReviewQuiz(correct, total){
   text.innerHTML = `Вспомнил верно: ${correct} из ${total}. Получено ${reward} ${coinIcon()} за повторение.`;
   btn.textContent = "Продолжить";
   btn.onclick = () => {
-    document.querySelector("#stepQuiz .lock-head h3").textContent = "🧠 Проверка знаний";
-    document.querySelector("#stepQuiz .lock-head p").textContent = "Реши задания по теме";
     resetFlow();
     refreshAllStats();
     saveState();
@@ -2968,11 +4096,22 @@ function finishReviewQuiz(correct, total){
 }
 
 function resetFlow(){
+  // Таймеры просмотра и сложного режима иначе продолжали тикать в фоне
+  // и могли «сами» отправить квиз, из которого уже вышли.
+  clearInterval(watchTimerHandle); watchTimerHandle = null;
+  if(hardModeTimerHandle){ clearInterval(hardModeTimerHandle); hardModeTimerHandle = null; }
   document.getElementById("submitQuizBtn").disabled = false;
   document.getElementById("videoIframe").src = "";
   selectedAnswers = {};
+  reviewModeActive = false;
+  setQuizHeading("Проверка знаний", "Реши задания по теме");
   showStep("stepSetup");
 }
+document.getElementById("watchBackBtn").onclick = () => resetFlow();
+document.getElementById("quizBackBtn").onclick = () => {
+  if(Object.keys(selectedAnswers).length && !quizLocked && !confirm("Выйти из квиза? Ответы не сохранятся.")) return;
+  resetFlow();
+};
 
 // ---- SHOP: THEMES ----
 // Магазин только показывает каталог тем и позволяет их купить.
@@ -3043,6 +4182,11 @@ document.getElementById("openChestBtn") && (document.getElementById("openChestBt
     return;
   }
   state.lastChestOpenAt = Date.now();
+  const chestImg = document.getElementById("chestImg");
+  if(chestImg){
+    chestImg.classList.remove("opening"); void chestImg.offsetWidth; chestImg.classList.add("opening");
+    chestImg.addEventListener("animationend", () => chestImg.classList.remove("opening"), { once:true });
+  }
   const lockedThemes = THEMES.filter(t => t.price > 0 && !state.unlockedThemes.includes(t.id));
   const roll = Math.random();
   let msg;
@@ -3050,6 +4194,7 @@ document.getElementById("openChestBtn") && (document.getElementById("openChestBt
     const t = lockedThemes[Math.floor(Math.random()*lockedThemes.length)];
     state.unlockedThemes.push(t.id);
     msg = `🎉 Редкая находка! Тема «<b>${t.name}</b>» открыта бесплатно!`;
+    setTimeout(()=> celebrate({ icon:"palette", kicker:"Редкая находка", title:"Тема «" + t.name + "»", sub:"Включи её в «Настройках»" }), 650);
   } else {
     const reward = 10 + Math.floor(Math.random()*40);
     state.coins += reward;
@@ -3249,12 +4394,17 @@ function openThemedCase(caseDef){
   state.coins -= caseDef.price;
   state.caseCooldowns = state.caseCooldowns || {};
   state.caseCooldowns[caseDef.id] = Date.now();
+  const caseArt = document.getElementById("caseModalArt");
+  if(caseArt){
+    caseArt.classList.remove("opening"); void caseArt.offsetWidth; caseArt.classList.add("opening");
+  }
   const lockedInPool = THEMES.filter(t => caseDef.pool.includes(t.id) && !state.unlockedThemes.includes(t.id));
   const roll = Math.random();
   let msg;
   if(roll < 0.25 && lockedInPool.length){
     const t = lockedInPool[Math.floor(Math.random()*lockedInPool.length)];
     state.unlockedThemes.push(t.id);
+    setTimeout(()=> celebrate({ icon:"palette", kicker:"Удача! " + caseDef.name, title:"Тема «" + t.name + "»", sub:"Включи её в «Настройках»" }), 650);
     msg = `${icon(caseDef.icon,"stat-ic--sm")} Удача! «${caseDef.name}» подарил тему «<b>${t.name}</b>»!`;
   } else {
     const [lo, hi] = caseDef.coinRange;
@@ -3271,7 +4421,12 @@ function openThemedCase(caseDef){
   saveState();
 }
 // Раз в секунду обновляем обратный отсчёт КД на сундуке и кейсах, пока открыт магазин
-setInterval(()=>{ renderChest(); renderCases(); }, 1000);
+// (окно кейса тоже обновляем — раньше его таймер «замирал» на моменте открытия).
+setInterval(()=>{
+  if(document.getElementById("shopTab").classList.contains("hidden")) return;
+  renderChest(); renderCases();
+  if(caseModalCurrent) renderCaseModalState();
+}, 1000);
 
 // ---- МАГАЗИН: звуковые эффекты ----
 function renderSoundShop(){
@@ -3372,7 +4527,7 @@ function renderThemeSettings(){
       <div class="theme-name">${theme.name}</div>
       ${isActive ? '<div class="check-badge">✓</div>' : ""}
     `;
-    card.onclick = () => { applyTheme(theme.id); playSound("coin"); vibrate(10); refreshAllStats(); saveState(); renderThemeSettings(); };
+    card.onclick = () => { chooseTheme(theme.id); playSound("coin"); vibrate(10); refreshAllStats(); saveState(); renderThemeSettings(); };
     grid.appendChild(card);
   });
   if(hint){
@@ -3425,7 +4580,7 @@ function buyOrSelectTheme(theme){
     playSound("coin");
     vibrate(10);
   }
-  applyTheme(theme.id);
+  chooseTheme(theme.id);
   refreshAllStats();
   renderShop();
   saveState();
@@ -3548,6 +4703,7 @@ function renderMap(){
   document.getElementById("mapLevelEmoji").innerHTML = icon(lvl.icon);
   document.getElementById("mapLevelTitle").textContent = lvl.title;
   document.getElementById("mapLevelSub").textContent = `Пройдено тем: ${state.totalCompleted}`;
+  setLevelFill("mapLevelFill", state.totalCompleted);
 
   const subjIds = GRADE_SUBJECTS[state.grade];
   if(!state.grade || !subjIds){
@@ -3569,6 +4725,7 @@ function renderMap(){
     const spct = subj.topics.length ? Math.round(subjDone/subj.topics.length*100) : 0;
     const node = document.createElement("div");
     node.className = "map-node" + (spct===100 ? " mdone" : "");
+    node.style.setProperty("--sc", SUBJECT_COLOR[subj.id] || "var(--accent)");
     node.innerHTML = `
       <div class="mnode-dot${spct===100?" mnode-flag":""}">${spct===100?icon("checkcircle"):icon(SUBJECT_ICON[subj.id]||"bookopen")}</div>
       <div class="mnode-body">
@@ -3636,7 +4793,11 @@ document.getElementById("authBack2").onclick = () => showAuthStep("authStepRole"
 
 document.getElementById("authChildDone").onclick = () => {
   const name = document.getElementById("authNameInput").value.trim();
-  if(!name){ alert("Введи имя"); return; }
+  if(!name){
+    showToast("Напиши своё имя, чтобы продолжить", "warn");
+    document.getElementById("authNameInput").focus();
+    return;
+  }
   state.accountType = "child";
   state.childName = name;
   if(!state.myCode) state.myCode = genCode();
@@ -3825,6 +4986,7 @@ document.getElementById("syncBtn").onclick = () => syncLinkedChild(false);
 document.getElementById("profNameInput").addEventListener("change", e=>{
   state.childName = e.target.value.trim();
   document.getElementById("childNameInput").value = state.childName;
+  refreshAllStats();
   saveState();
 });
 document.getElementById("copyCodeBtn").onclick = async () => {
@@ -3913,9 +5075,13 @@ if("serviceWorker" in navigator){
   // Как только новая версия sw.js установилась и взяла управление страницей —
   // перезагружаем один раз, чтобы обновление приложения подхватилось сразу,
   // а не только при следующем ручном перезапуске.
+  // При самом первом открытии controller ещё нет: sw.js делает clients.claim(),
+  // и controllerchange срабатывает без всякого обновления — перезагрузка тогда
+  // сбросила бы онбординг посреди ввода имени. Перезагружаем только при смене версии.
+  const hadSwController = !!navigator.serviceWorker.controller;
   let swRefreshing = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if(swRefreshing) return;
+    if(swRefreshing || !hadSwController) return;
     swRefreshing = true;
     window.location.reload();
   });

@@ -3,7 +3,7 @@
 // иначе браузер не заметит, что sw.js изменился (это единственный сигнал
 // для обновления кэша), и старые версии страницы будут открываться даже
 // после переустановки/повторной публикации.
-const CACHE_NAME = "spark-v13";
+const CACHE_NAME = "spark-v19";
 const CORE_ASSETS = [
   "./",
   "./index.html",
@@ -67,7 +67,8 @@ self.addEventListener("fetch", (event) => {
           }
           return response;
         })
-        .catch(() => caches.match(event.request))
+        // офлайн: страница с ?параметрами или "/" может не совпасть с ключом кэша — отдаём index.html
+        .catch(() => caches.match(event.request).then((hit) => hit || caches.match("./index.html")))
     );
     return;
   }
